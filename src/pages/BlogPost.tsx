@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Eye, Share2, MessageCircle, Heart, Loader2, X } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Share2, MessageCircle, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,6 @@ import PostReactions from "@/components/PostReactions";
 import CommentsSection from "@/components/CommentsSection";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import ReadingTimeEstimator from "@/components/ReadingTimeEstimator";
-import AdBanner from "@/components/AdBanner";
 
 interface ContentBlock {
   id: string;
@@ -48,71 +47,6 @@ const BlogPost = () => {
   const [post, setPost] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [aiSummary, setAiSummary] = useState("");
-  const [aiSummarizing, setAiSummarizing] = useState(false);
-  const [showAiPanel, setShowAiPanel] = useState(false);
-
-  const handleAISummarize = async () => {
-    if (!post) return;
-    setShowAiPanel(true);
-    setAiSummarizing(true);
-    setAiSummary("");
-    try {
-      let textContent = post.title + ". " + (post.summary || "");
-      try {
-        const blocks = JSON.parse(post.content);
-        if (Array.isArray(blocks)) {
-          textContent += " " + blocks.map((b: any) => b.content).join(" ");
-        }
-      } catch { textContent += " " + (post.content || ""); }
-      const prompt = `Summarize this blog post in a concise paragraph (4-6 sentences). Focus on the key points and takeaways:\n\n${textContent.slice(0, 3000)}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, 10000); // 10s timeout
-      
-      try {
-        const res = await fetch("/api/ai-summarize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        
-        if (res.status === 429) {
-          setAiSummary("Rate limit reached. Please wait a moment and try again.");
-        } else if (!res.ok) {
-          setAiSummary("Unable to generate summary. Please try again.");
-        } else {
-          try {
-            const data = await res.json();
-            if (data.status === "success" && data.text) {
-              setAiSummary(data.text.trim());
-            } else {
-              setAiSummary("Unable to generate summary. Please try again.");
-            }
-          } catch (parseErr) {
-            console.error("JSON parse error:", parseErr);
-            setAiSummary("Unable to parse response. Please try again.");
-          }
-        }
-      } catch (fetchErr: any) {
-        if (fetchErr.name === "AbortError") {
-          console.error("AI request timeout");
-          setAiSummary("Request timed out. Please try again.");
-        } else {
-          console.error("Fetch error:", fetchErr);
-          setAiSummary("Network error. Please check your connection and try again.");
-        }
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      setAiSummary("An unexpected error occurred. Please try again."); 
-    } finally {
-      setAiSummarizing(false);
-    }
-  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -234,34 +168,7 @@ const BlogPost = () => {
               </button>
             </div>
 
-            {/* AI Summary Panel */}
-            {showAiPanel && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-10 relative"
-              >
-                <button onClick={() => setShowAiPanel(false)} className="absolute top-3 right-3 p-1 rounded-full hover:bg-primary/10 transition-colors">
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-black text-primary-foreground">Y</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">AI Summary</p>
-                    {aiSummarizing ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Analyzing content...</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed text-foreground">{aiSummary}</p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
+
 
             {/* Post Meta Card */}
             <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-6 mb-10 shadow-card">
@@ -324,9 +231,6 @@ const BlogPost = () => {
                 />
               </motion.div>
             )}
-
-            {/* Ad Banner - After Featured Image */}
-            <AdBanner slot="5634284523" format="auto" className="max-w-4xl mx-auto" />
 
             {/* Content */}
             {post.content && (
@@ -604,9 +508,6 @@ const BlogPost = () => {
               </motion.div>
             )}
 
-            {/* Ad Banner - Middle of Content */}
-            <AdBanner slot="7431057282" format="fluid" layoutKey="-gw-3+1f-3d+2z" className="max-w-4xl mx-auto" />
-
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-12" />
 
@@ -664,13 +565,6 @@ const BlogPost = () => {
           </div>
         </section>
       )}
-
-      {/* Ad Banner - Bottom of Page */}
-      <div className="py-12 border-t border-border">
-        <div className="container max-w-7xl">
-          <AdBanner slot="1408574414" format="autorelaxed" className="max-w-4xl mx-auto" />
-        </div>
-      </div>
 
       <Footer />
       <BackToTop />

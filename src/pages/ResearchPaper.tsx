@@ -3,14 +3,13 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   GraduationCap, Calendar, Clock, Eye, Download, Quote, BookOpen,
-  ArrowLeft, Building, ExternalLink, Copy, Check, Loader2, X
+  ArrowLeft, Building, ExternalLink, Copy, Check
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SmartSearch from "@/components/SmartSearch";
 import SocialShareButtons from "@/components/SocialShareButtons";
-import AdBanner from "@/components/AdBanner";
 
 interface ContentBlock {
   id: string;
@@ -31,9 +30,6 @@ const ResearchPaper = () => {
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [aiSummary, setAiSummary] = useState("");
-  const [aiSummarizing, setAiSummarizing] = useState(false);
-  const [showAiPanel, setShowAiPanel] = useState(false);
 
   useEffect(() => {
     const fetchPaper = async () => {
@@ -69,68 +65,7 @@ const ResearchPaper = () => {
     fetchPaper();
   }, [slug]);
 
-  const handleAISummarize = async () => {
-    if (!paper) return;
-    setShowAiPanel(true);
-    setAiSummarizing(true);
-    setAiSummary("");
-    try {
-      let textContent = paper.title + ". " + (paper.abstract || "");
-      try {
-        const blocks = JSON.parse(paper.content || "[]");
-        if (Array.isArray(blocks)) {
-          textContent += " " + blocks.map((b: any) => b.content).join(" ");
-        }
-      } catch { textContent += " " + (paper.content || ""); }
-      const prompt = `Summarize this research paper in a concise paragraph (4-6 sentences). Focus on the key findings and implications:\n\n${textContent.slice(0, 3000)}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, 10000); // 10s timeout
-      
-      try {
-        const res = await fetch("/api/ai-summarize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-        clearTimeout(timeoutId);
-        
-        if (res.status === 429) {
-          setAiSummary("Rate limit reached. Please wait a moment and try again.");
-        } else if (!res.ok) {
-          setAiSummary("Unable to generate summary. Please try again.");
-        } else {
-          try {
-            const data = await res.json();
-            if (data.status === "success" && data.text) {
-              setAiSummary(data.text.trim());
-            } else {
-              setAiSummary("Unable to generate summary. Please try again.");
-            }
-          } catch (parseErr) {
-            console.error("JSON parse error:", parseErr);
-            setAiSummary("Unable to parse response. Please try again.");
-          }
-        }
-      } catch (fetchErr: any) {
-        if (fetchErr.name === "AbortError") {
-          console.error("AI request timeout");
-          setAiSummary("Request timed out. Please try again.");
-        } else {
-          console.error("Fetch error:", fetchErr);
-          setAiSummary("Network error. Please check your connection and try again.");
-        }
-      }
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      setAiSummary("An unexpected error occurred. Please try again."); 
-    } finally {
-      setAiSummarizing(false);
-    }
-  };
+
 
   const handleCiteCopy = async () => {
     if (!paper) return;
@@ -386,52 +321,7 @@ const ResearchPaper = () => {
               </motion.div>
             )}
 
-            {/* AI Summarize Button */}
-            <div className="flex items-center gap-3 mb-6 justify-center">
-              <button
-                onClick={handleAISummarize}
-                disabled={aiSummarizing}
-                className="group inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-sm font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[10px] font-black">Y</span>
-                </div>
-                {aiSummarizing ? "Summarizing..." : "AI Summarize"}
-                {aiSummarizing && <Loader2 className="h-4 w-4 animate-spin" />}
-              </button>
-            </div>
 
-            {/* AI Summary Panel */}
-            {showAiPanel && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-10 relative"
-              >
-                <button onClick={() => setShowAiPanel(false)} className="absolute top-3 right-3 p-1 rounded-full hover:bg-primary/10 transition-colors">
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-black text-primary-foreground">Y</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">AI Summary</p>
-                    {aiSummarizing ? (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Analyzing content...</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed text-foreground">{aiSummary}</p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Ad Banner - After Cover Image */}
-            <AdBanner slot="5634284523" format="auto" className="max-w-4xl mx-auto mb-10" />
 
             {/* Abstract */}
             {paper.abstract && (
@@ -467,9 +357,6 @@ const ResearchPaper = () => {
               ))}
             </motion.div>
 
-            {/* Ad Banner - Middle of Content */}
-            <AdBanner slot="7431057282" format="fluid" layoutKey="-gw-3+1f-3d+2z" className="max-w-4xl mx-auto" />
-
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-12" />
 
@@ -487,13 +374,6 @@ const ResearchPaper = () => {
           </motion.div>
         </div>
       </article>
-
-      {/* Ad Banner - Bottom of Page */}
-      <div className="py-12 border-t border-border">
-        <div className="container max-w-7xl">
-          <AdBanner slot="1408574414" format="autorelaxed" className="max-w-4xl mx-auto" />
-        </div>
-      </div>
 
       <Footer />
     </div>
