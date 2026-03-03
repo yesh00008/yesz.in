@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, Loader2, IndianRupee, Crown, Zap, TrendingUp, BarChart3, Users } from "lucide-react";
+import { Check, Loader2, IndianRupee, Crown, Zap, TrendingUp, BarChart3, Users, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { razorpayService, PRICES_INR, formatINR } from "@/integrations/razorpay/razorpayService";
 
 interface CreatorProPaymentProps {
@@ -58,6 +59,14 @@ const CreatorProPayment = ({ userId, userName, userEmail, userPhone }: CreatorPr
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-2xl mx-auto"
     >
+      {/* Back Button */}
+      <Link
+        to="/profile?tab=subscription"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Profile
+      </Link>
+
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold flex items-center justify-center gap-2 text-primary mb-2">

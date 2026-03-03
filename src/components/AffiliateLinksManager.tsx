@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link, Copy, TrendingUp, DollarSign, CheckCircle, Plus } from "lucide-react";
+import { Link as LinkIcon, Copy, TrendingUp, DollarSign, CheckCircle, Plus, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 
 interface AffiliateLink {
   id?: string;
@@ -64,6 +65,14 @@ const AffiliateLinksManager = ({ postId }: { postId: string }) => {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
+      {/* Back Button */}
+      <Link
+        to="/profile?tab=affiliate"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Profile
+      </Link>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -190,7 +199,7 @@ const AffiliateLinksManager = ({ postId }: { postId: string }) => {
       <div className="space-y-3">
         {links.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <Link className="h-12 w-12 mx-auto opacity-20 mb-4" />
+            <LinkIcon className="h-12 w-12 mx-auto opacity-20 mb-4" />
             <p>No affiliate links yet</p>
           </div>
         ) : (

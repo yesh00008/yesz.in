@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Lock, Unlock, Loader2, ArrowRight } from "lucide-react";
+import { Lock, Unlock, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { razorpayService, PRICES_INR, formatINR } from "@/integrations/razorpay/razorpayService";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -78,6 +79,14 @@ const PremiumPaywall = ({
 
   return (
     <div className="relative">
+      {/* Back Button */}
+      <Link
+        to="/profile"
+        className="absolute top-0 left-0 z-10 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back
+      </Link>
+
       {/* Preview with blur effect */}
       <div className="prose prose-invert max-w-none blur-sm pointer-events-none">
         <div dangerouslySetInnerHTML={{ __html: previewContent }} />

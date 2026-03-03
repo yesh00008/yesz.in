@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Briefcase, MapPin, IndianRupee, Clock, Star, Loader2, Plus } from "lucide-react";
+import { Briefcase, MapPin, IndianRupee, Clock, Star, Loader2, Plus, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { razorpayService, PRICES_INR, formatINR } from "@/integrations/razorpay/razorpayService";
 
 interface JobListing {
@@ -83,6 +84,14 @@ const TechJobBoard = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
+      {/* Back Button */}
+      <Link
+        to="/profile?tab=jobs"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Profile
+      </Link>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

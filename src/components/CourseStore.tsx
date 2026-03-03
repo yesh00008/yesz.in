@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { BookOpen, Play, Award, Users, ShoppingCart, Loader2, Plus, Star } from "lucide-react";
+import { BookOpen, Play, Award, Users, ShoppingCart, Loader2, Plus, Star, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { razorpayService, PRICES_INR, formatINR } from "@/integrations/razorpay/razorpayService";
 
 interface Course {
@@ -121,6 +122,14 @@ const CourseStore = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto">
+      {/* Back Button */}
+      <Link
+        to="/profile?tab=courses"
+        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" /> Back to Profile
+      </Link>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
