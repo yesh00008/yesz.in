@@ -22,6 +22,7 @@ const CreatorProfile = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState({ 
     display_name: "", 
+    full_name: "",
     bio: "", 
     website: "",
     twitter_url: "",
@@ -30,6 +31,9 @@ const CreatorProfile = () => {
     instagram_url: "",
     location: "",
     expertise: "",
+    company: "",
+    phone: "",
+    years_experience: "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
@@ -48,6 +52,7 @@ const CreatorProfile = () => {
         setProfile(prof);
         setEditFormData({
           display_name: prof.display_name || "",
+          full_name: prof.full_name || "",
           bio: prof.bio || "",
           website: prof.website || "",
           twitter_url: prof.twitter_url || "",
@@ -56,6 +61,9 @@ const CreatorProfile = () => {
           instagram_url: prof.instagram_url || "",
           location: prof.location || "",
           expertise: prof.expertise || "",
+          company: prof.company || "",
+          phone: prof.phone || "",
+          years_experience: prof.years_experience || "",
         });
         if (prof.avatar_url) {
           setAvatarPreview(prof.avatar_url);
@@ -98,9 +106,13 @@ const CreatorProfile = () => {
       
       // Only include fields that have values (not empty strings)
       if (editFormData.display_name) updateData.display_name = editFormData.display_name;
+      if (editFormData.full_name) updateData.full_name = editFormData.full_name;
       if (editFormData.bio) updateData.bio = editFormData.bio;
       if (editFormData.website) updateData.website = editFormData.website;
       if (editFormData.location) updateData.location = editFormData.location;
+      if (editFormData.company) updateData.company = editFormData.company;
+      if (editFormData.phone) updateData.phone = editFormData.phone;
+      if (editFormData.years_experience) updateData.years_experience = editFormData.years_experience;
       if (editFormData.expertise) updateData.expertise = editFormData.expertise;
       if (editFormData.twitter_url) updateData.twitter_url = editFormData.twitter_url;
       if (editFormData.linkedin_url) updateData.linkedin_url = editFormData.linkedin_url;
@@ -279,15 +291,27 @@ const CreatorProfile = () => {
                     </div>
                   </div>
 
-                  {/* Username */}
+                  {/* Display Name */}
                   <div>
-                    <label className="block text-sm font-semibold mb-2">Username</label>
+                    <label className="block text-sm font-semibold mb-2">Display Name</label>
                     <input
                       type="text"
                       value={editFormData.display_name}
                       onChange={(e) => setEditFormData({ ...editFormData, display_name: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
-                      placeholder="Your name"
+                      placeholder="Your display name"
+                    />
+                  </div>
+
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Full Name</label>
+                    <input
+                      type="text"
+                      value={editFormData.full_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="Your full name"
                     />
                   </div>
 
@@ -312,6 +336,42 @@ const CreatorProfile = () => {
                       onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
                       placeholder="City, Country"
+                    />
+                  </div>
+
+                  {/* Company */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Company / Organization</label>
+                    <input
+                      type="text"
+                      value={editFormData.company}
+                      onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="Your company name"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editFormData.phone}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  {/* Years of Experience */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Years of Experience</label>
+                    <input
+                      type="text"
+                      value={editFormData.years_experience}
+                      onChange={(e) => setEditFormData({ ...editFormData, years_experience: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="e.g., 5+ years or 2 years"
                     />
                   </div>
 
@@ -430,19 +490,30 @@ const CreatorProfile = () => {
               <div className="flex-1">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-foreground">{profile?.display_name || "Creator"}</h1>
-                    {profile?.bio && <p className="text-sm sm:text-base text-muted-foreground mt-1">{profile.bio}</p>}
+                    <h1 className="text-2xl sm:text-3xl font-black text-foreground">{profile?.full_name || profile?.display_name || "Creator"}</h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-semibold mt-0.5">@{profile?.display_name || "creator"}</p>
+                    {profile?.bio && <p className="text-sm sm:text-base text-muted-foreground mt-2">{profile.bio}</p>}
                     
-                    {/* Location & Expertise */}
+                    {/* Location, Company, Experience & Expertise */}
                     <div className="flex flex-wrap items-center gap-2 mt-3">
                       {profile?.location && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-xs font-semibold text-primary">
                           📍 {profile.location}
                         </span>
                       )}
+                      {profile?.company && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/10 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                          💼 {profile.company}
+                        </span>
+                      )}
+                      {profile?.years_experience && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          ⭐ {profile.years_experience}
+                        </span>
+                      )}
                       {profile?.expertise && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary text-xs font-semibold text-foreground">
-                          ✨ Expert in: {profile.expertise}
+                          ✨ {profile.expertise}
                         </span>
                       )}
                     </div>
@@ -507,11 +578,12 @@ const CreatorProfile = () => {
                   href={profile.twitter_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors font-semibold text-sm"
                   title="Twitter"
                 >
                   <Twitter className="h-4 w-4" />
+                  Twitter
                 </motion.a>
               )}
               
@@ -520,11 +592,12 @@ const CreatorProfile = () => {
                   href={profile.linkedin_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center gap-2 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/20 transition-colors font-semibold text-sm"
                   title="LinkedIn"
                 >
                   <Linkedin className="h-4 w-4" />
+                  LinkedIn
                 </motion.a>
               )}
               
@@ -533,11 +606,12 @@ const CreatorProfile = () => {
                   href={profile.github_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 rounded-lg bg-gray-500/10 border border-gray-500/30 flex items-center justify-center gap-2 text-gray-700 dark:text-gray-400 hover:bg-gray-500/20 transition-colors font-semibold text-sm"
                   title="GitHub"
                 >
                   <Github className="h-4 w-4" />
+                  GitHub
                 </motion.a>
               )}
               
@@ -546,11 +620,12 @@ const CreatorProfile = () => {
                   href={profile.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  className="px-4 py-2 rounded-lg bg-pink-500/10 border border-pink-500/30 flex items-center justify-center gap-2 text-pink-600 dark:text-pink-400 hover:bg-pink-500/20 transition-colors font-semibold text-sm"
                   title="Instagram"
                 >
                   <Instagram className="h-4 w-4" />
+                  Instagram
                 </motion.a>
               )}
             </div>
