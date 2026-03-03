@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Globe, Calendar, Eye, FileText, Users, Instagram, Zap, BookOpen, Ticket, TrendingUp, Mail, Briefcase, Settings, Edit2, Twitter, Linkedin, Github } from "lucide-react";
+import { Globe, Calendar, Eye, FileText, Users, Instagram, Zap, BookOpen, Ticket, TrendingUp, Mail, Briefcase, Settings, Edit2, Twitter, Linkedin, Github, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
@@ -20,7 +20,20 @@ const CreatorProfile = () => {
   const [loading, setLoading] = useState(true);
   const [followerCount, setFollowerCount] = useState(0);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editFormData, setEditFormData] = useState({ display_name: "", bio: "", website: "" });
+  const [editFormData, setEditFormData] = useState({ 
+    display_name: "", 
+    bio: "", 
+    website: "",
+    twitter_url: "",
+    linkedin_url: "",
+    github_url: "",
+    instagram_url: "",
+    location: "",
+    expertise: "",
+  });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
 
   const isOwnProfile = user?.id === userId;
 
@@ -37,7 +50,16 @@ const CreatorProfile = () => {
           display_name: prof.display_name || "",
           bio: prof.bio || "",
           website: prof.website || "",
+          twitter_url: prof.twitter_url || "",
+          linkedin_url: prof.linkedin_url || "",
+          github_url: prof.github_url || "",
+          instagram_url: prof.instagram_url || "",
+          location: prof.location || "",
+          expertise: prof.expertise || "",
         });
+        if (prof.avatar_url) {
+          setAvatarPreview(prof.avatar_url);
+        }
       }
 
       const { data: creatorPosts } = await supabase
@@ -69,15 +91,50 @@ const CreatorProfile = () => {
 
   const handleUpdateProfile = async () => {
     if (!user?.id) return;
+    
+    setUploading(true);
     try {
+      let updateData = { ...editFormData };
+      
+      // Handle avatar upload
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(fileName, avatarFile, { upsert: true });
+        
+        if (uploadError) throw uploadError;
+        
+        const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
+        updateData.avatar_url = data.publicUrl;
+      }
+      
       await supabase
         .from("profiles")
-        .update(editFormData)
+        .update(updateData)
         .eq("user_id", user.id);
-      setProfile({ ...profile, ...editFormData });
+      
+      setProfile({ ...profile, ...updateData });
+      setAvatarFile(null);
       setShowEditModal(false);
     } catch (error) {
       console.error("Error updating profile:", error);
+      alert("Failed to update profile. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAvatarPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -136,56 +193,176 @@ const CreatorProfile = () => {
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-card rounded-2xl p-6 max-w-md w-full space-y-4 border border-border"
+                className="bg-card rounded-2xl p-6 max-w-2xl w-full border border-border max-h-[90vh] overflow-y-auto"
               >
-                <h2 className="text-2xl font-bold">Edit Profile</h2>
-                
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Username</label>
-                  <input
-                    type="text"
-                    value={editFormData.display_name}
-                    onChange={(e) => setEditFormData({ ...editFormData, display_name: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
-                    placeholder="Your name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Bio</label>
-                  <textarea
-                    value={editFormData.bio}
-                    onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary resize-none"
-                    placeholder="Your bio"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Website</label>
-                  <input
-                    type="url"
-                    value={editFormData.website}
-                    onChange={(e) => setEditFormData({ ...editFormData, website: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
-                    placeholder="https://example.com"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Edit Profile</h2>
                   <button
                     onClick={() => setShowEditModal(false)}
-                    className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-secondary transition-colors"
+                    className="p-2 hover:bg-secondary rounded-lg transition-colors"
                   >
-                    Cancel
+                    <X className="h-5 w-5" />
                   </button>
-                  <button
-                    onClick={handleUpdateProfile}
-                    className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:brightness-110 transition-all font-semibold"
-                  >
-                    Save
-                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Avatar Upload */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-3">Profile Picture</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-lg bg-primary/10 flex items-center justify-center text-3xl font-black text-primary overflow-hidden">
+                        {avatarPreview ? (
+                          <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          profile?.display_name?.[0]?.toUpperCase() || "C"
+                        )}
+                      </div>
+                      <div>
+                        <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 cursor-pointer font-semibold text-sm transition-colors">
+                          <Upload className="h-4 w-4" />
+                          Upload Photo
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                          />
+                        </label>
+                        <p className="text-xs text-muted-foreground mt-2">JPG, PNG or GIF (Max 5MB)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Username */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Username</label>
+                    <input
+                      type="text"
+                      value={editFormData.display_name}
+                      onChange={(e) => setEditFormData({ ...editFormData, display_name: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="Your name"
+                    />
+                  </div>
+
+                  {/* Bio */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Bio</label>
+                    <textarea
+                      value={editFormData.bio}
+                      onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary resize-none"
+                      placeholder="Tell about yourself..."
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={editFormData.location}
+                      onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="City, Country"
+                    />
+                  </div>
+
+                  {/* Expertise */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Expertise / Skills</label>
+                    <textarea
+                      value={editFormData.expertise}
+                      onChange={(e) => setEditFormData({ ...editFormData, expertise: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary resize-none"
+                      placeholder="e.g., Web Development, AI, Data Science"
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Comma-separated skills and expertise areas</p>
+                  </div>
+
+                  {/* Website */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Website</label>
+                    <input
+                      type="url"
+                      value={editFormData.website}
+                      onChange={(e) => setEditFormData({ ...editFormData, website: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+
+                  {/* Social Links Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold">Social Links</h3>
+                    
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 text-muted-foreground">Twitter URL</label>
+                      <input
+                        type="url"
+                        value={editFormData.twitter_url}
+                        onChange={(e) => setEditFormData({ ...editFormData, twitter_url: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary text-sm"
+                        placeholder="https://twitter.com/yourhandle"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 text-muted-foreground">LinkedIn URL</label>
+                      <input
+                        type="url"
+                        value={editFormData.linkedin_url}
+                        onChange={(e) => setEditFormData({ ...editFormData, linkedin_url: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary text-sm"
+                        placeholder="https://linkedin.com/in/yourprofile"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 text-muted-foreground">GitHub URL</label>
+                      <input
+                        type="url"
+                        value={editFormData.github_url}
+                        onChange={(e) => setEditFormData({ ...editFormData, github_url: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary text-sm"
+                        placeholder="https://github.com/yourprofile"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold mb-1 text-muted-foreground">Instagram URL</label>
+                      <input
+                        type="url"
+                        value={editFormData.instagram_url}
+                        onChange={(e) => setEditFormData({ ...editFormData, instagram_url: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary text-sm"
+                        placeholder="https://instagram.com/yourhandle"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-6 border-t border-border">
+                    <button
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setAvatarFile(null);
+                        setAvatarPreview(profile?.avatar_url || "");
+                      }}
+                      className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-secondary transition-colors font-semibold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUpdateProfile}
+                      disabled={uploading}
+                      className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold"
+                    >
+                      {uploading ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
@@ -209,6 +386,20 @@ const CreatorProfile = () => {
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-foreground">{profile?.display_name || "Creator"}</h1>
                     {profile?.bio && <p className="text-sm sm:text-base text-muted-foreground mt-1">{profile.bio}</p>}
+                    
+                    {/* Location & Expertise */}
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      {profile?.location && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          📍 {profile.location}
+                        </span>
+                      )}
+                      {profile?.expertise && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary text-xs font-semibold text-foreground">
+                          ✨ Expert in: {profile.expertise}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {isOwnProfile && (
                     <motion.button
@@ -263,19 +454,59 @@ const CreatorProfile = () => {
 
             {/* Social Links */}
             <div className="flex items-center gap-2 flex-wrap mb-6">
-              <span className="text-xs font-semibold text-muted-foreground uppercase">Follow:</span>
-              <motion.button whileHover={{ scale: 1.1 }} className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
-                <Twitter className="h-4 w-4" />
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.1 }} className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
-                <Linkedin className="h-4 w-4" />
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.1 }} className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
-                <Github className="h-4 w-4" />
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.1 }} className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors">
-                <Instagram className="h-4 w-4" />
-              </motion.button>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Connect:</span>
+              
+              {profile?.twitter_url && (
+                <motion.a
+                  href={profile.twitter_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.1 }}
+                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  title="Twitter"
+                >
+                  <Twitter className="h-4 w-4" />
+                </motion.a>
+              )}
+              
+              {profile?.linkedin_url && (
+                <motion.a
+                  href={profile.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.1 }}
+                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  title="LinkedIn"
+                >
+                  <Linkedin className="h-4 w-4" />
+                </motion.a>
+              )}
+              
+              {profile?.github_url && (
+                <motion.a
+                  href={profile.github_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.1 }}
+                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  title="GitHub"
+                >
+                  <Github className="h-4 w-4" />
+                </motion.a>
+              )}
+              
+              {profile?.instagram_url && (
+                <motion.a
+                  href={profile.instagram_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.1 }}
+                  className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  title="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </motion.a>
+              )}
             </div>
 
             {/* Divider */}
