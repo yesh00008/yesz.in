@@ -83,28 +83,53 @@ const ResearchPaper = () => {
         }
       } catch { textContent += " " + (paper.content || ""); }
       const prompt = `Summarize this research paper in a concise paragraph (4-6 sentences). Focus on the key findings and implications:\n\n${textContent.slice(0, 3000)}`;
-      const res = await fetch(AI_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 10000); // 10s timeout
       
-      if (res.status === 429) {
-        setAiSummary("Rate limit reached. Please wait a moment and try again.");
-      } else if (!res.ok) {
-        setAiSummary("Unable to generate summary. Please try again.");
-      } else {
-        const data = await res.json();
-        if (data.status === "success" && data.text) {
-          setAiSummary(data.text.trim());
-        } else {
+      try {
+        const res = await fetch("/api/ai-summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
+        
+        if (res.status === 429) {
+          setAiSummary("Rate limit reached. Please wait a moment and try again.");
+        } else if (!res.ok) {
           setAiSummary("Unable to generate summary. Please try again.");
+        } else {
+          try {
+            const data = await res.json();
+            if (data.status === "success" && data.text) {
+              setAiSummary(data.text.trim());
+            } else {
+              setAiSummary("Unable to generate summary. Please try again.");
+            }
+          } catch (parseErr) {
+            console.error("JSON parse error:", parseErr);
+            setAiSummary("Unable to parse response. Please try again.");
+          }
+        }
+      } catch (fetchErr: any) {
+        if (fetchErr.name === "AbortError") {
+          console.error("AI request timeout");
+          setAiSummary("Request timed out. Please try again.");
+        } else {
+          console.error("Fetch error:", fetchErr);
+          setAiSummary("Network error. Please check your connection and try again.");
         }
       }
-    } catch { 
-      setAiSummary("Network error. Please check your connection and try again."); 
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setAiSummary("An unexpected error occurred. Please try again."); 
+    } finally {
+      setAiSummarizing(false);
     }
-    setAiSummarizing(false);
   };
 
   const handleCiteCopy = async () => {

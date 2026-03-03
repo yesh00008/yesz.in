@@ -95,21 +95,45 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
       const prompt = context
         ? `You are a tech blog search assistant. Based on these articles: ${context}. Answer this in exactly 2 short sentences: "${q}"`
         : `You are a tech blog search assistant. Answer this in exactly 2 short sentences: "${q}"`;
-      const response = await fetch(AI_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-      const data = await response.json();
-      if (data.status === "success" && data.text) {
-        setAiAnswer(data.text.trim());
-      } else {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 10000); // 10s timeout
+      
+      try {
+        const response = await fetch("/api/aero/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === "success" && data.text) {
+            setAiAnswer(data.text.trim());
+          } else {
+            setAiAnswer("");
+          }
+        } else {
+          console.error("AI API error:", response.status);
+          setAiAnswer("");
+        }
+      } catch (fetchErr: any) {
+        if (fetchErr.name === "AbortError") {
+          console.error("AI request timeout");
+        } else {
+          console.error("AI fetch error:", fetchErr);
+        }
         setAiAnswer("");
       }
-    } catch {
+    } catch (error) {
+      console.error("AI generation error:", error);
       setAiAnswer("");
+    } finally {
+      setAiLoading(false);
     }
-    setAiLoading(false);
   };
 
   useEffect(() => {
