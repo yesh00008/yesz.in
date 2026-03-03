@@ -72,9 +72,9 @@ const BlogPost = () => {
       }, 10000); // 10s timeout
       
       try {
-        const res = await fetch(\"/api/ai-summarize\", {
-          method: \"POST\",
-          headers: { \"Content-Type\": \"application/json\" },
+        const res = await fetch("/api/ai-summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt }),
           signal: controller.signal,
         });

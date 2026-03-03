@@ -311,7 +311,7 @@ CREATE VIEW creator_stats_view AS
 SELECT 
   u.id as creator_id,
   u.email,
-  u.user_metadata->>'name' as name,
+  COALESCE(u.raw_user_meta_data->>'name', u.email) as name,
   COALESCE(uf_count.follower_count, 0) as followers,
   COALESCE(post_count.total_posts, 0) as published_posts,
   COALESCE(paper_count.total_papers, 0) as published_papers,
