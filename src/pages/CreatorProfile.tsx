@@ -47,26 +47,27 @@ const CreatorProfile = () => {
         .from("profiles")
         .select("*")
         .eq("user_id", userId!)
-        .single();
+        .single() as any;
       if (prof) {
+        const profileData = prof as any;
         setProfile(prof);
         setEditFormData({
-          display_name: prof.display_name || "",
-          full_name: prof.full_name || "",
-          bio: prof.bio || "",
-          website: prof.website || "",
-          twitter_url: prof.twitter_url || "",
-          linkedin_url: prof.linkedin_url || "",
-          github_url: prof.github_url || "",
-          instagram_url: prof.instagram_url || "",
-          location: prof.location || "",
-          expertise: prof.expertise || "",
-          company: prof.company || "",
-          phone: prof.phone || "",
-          years_experience: prof.years_experience || "",
+          display_name: profileData.display_name || "",
+          full_name: profileData.full_name || "",
+          bio: profileData.bio || "",
+          website: profileData.website || "",
+          twitter_url: profileData.twitter_url || "",
+          linkedin_url: profileData.linkedin_url || "",
+          github_url: profileData.github_url || "",
+          instagram_url: profileData.instagram_url || "",
+          location: profileData.location || "",
+          expertise: profileData.expertise || "",
+          company: profileData.company || "",
+          phone: profileData.phone || "",
+          years_experience: profileData.years_experience || "",
         });
-        if (prof.avatar_url) {
-          setAvatarPreview(prof.avatar_url);
+        if (profileData.avatar_url) {
+          setAvatarPreview(profileData.avatar_url);
         }
       }
 
