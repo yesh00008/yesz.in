@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Clock, ArrowUpRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { memo } from "react";
 
 export interface PostCardData {
   id: string;
@@ -89,4 +90,10 @@ const PostCard = ({ post, index = 0, featured = false }: PostCardProps) => {
   );
 };
 
-export default PostCard;
+export default memo(PostCard, (prevProps, nextProps) => {
+  return (
+    prevProps.post.id === nextProps.post.id &&
+    prevProps.index === nextProps.index &&
+    prevProps.featured === nextProps.featured
+  );
+});

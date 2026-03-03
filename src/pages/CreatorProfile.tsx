@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Globe, Calendar, Eye, FileText, Users, Instagram, Zap, BookOpen, Ticket, TrendingUp, Mail, Briefcase, Settings, Edit2, Twitter, Linkedin, Github, Upload, X } from "lucide-react";
@@ -39,12 +39,19 @@ const CreatorProfile = () => {
 
   useEffect(() => {
     const fetchCreator = async () => {
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("display_name", username!)
-        .single() as any;
-      if (prof) {
+      try {
+        // Fetch profile with optimized columns
+        const { data: prof, error: profError } = await supabase
+          .from("profiles")
+          .select("id, user_id, display_name, full_name, bio, website, avatar_url, twitter_url, linkedin_url, github_url, instagram_url, location, expertise")
+          .eq("display_name", username!)
+          .single() as any;
+
+        if (profError || !prof) {
+          setLoading(false);
+          return;
+        }
+
         const profileData = prof as any;
         setProfile(prof);
         setIsOwnProfile(user?.id === profileData.user_id);
@@ -63,38 +70,46 @@ const CreatorProfile = () => {
         if (profileData.avatar_url) {
           setAvatarPreview(profileData.avatar_url);
         }
+
+        // Load all data in parallel
+        const [postsResult, papersResult, followerResult] = await Promise.all([
+          supabase
+            .from("posts")
+            .select("id, title, slug, excerpt, categories(name, slug), created_at, views")
+            .eq("author_id", profileData.user_id)
+            .eq("published", true)
+            .order("created_at", { ascending: false })
+            .limit(20),
+          supabase
+            .from("research_papers")
+            .select("id, title, slug, abstract, published_at, views")
+            .eq("author_id", profileData.user_id)
+            .not("published_at", "is", null)
+            .order("published_at", { ascending: false })
+            .limit(20),
+          supabase
+            .from("follows")
+            .select("*", { count: "exact", head: true })
+            .eq("following_id", profileData.user_id)
+        ]);
+
+        if (postsResult.data) setPosts(postsResult.data);
+        if (papersResult.data) setPapers(papersResult.data);
+        if (followerResult.count !== null) setFollowerCount(followerResult.count);
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching creator:", error);
+        setLoading(false);
       }
-
-      if (prof?.user_id) {
-        const { data: creatorPosts } = await supabase
-          .from("posts")
-          .select("*, categories(name, slug)")
-          .eq("author_id", prof.user_id)
-          .eq("published", true)
-          .order("created_at", { ascending: false });
-        if (creatorPosts) setPosts(creatorPosts);
-
-        const { data: researchPapers } = await supabase
-          .from("research_papers")
-          .select("*")
-          .eq("author_id", prof.user_id)
-          .not("published_at", "is", null)
-          .order("published_at", { ascending: false });
-        if (researchPapers) setPapers(researchPapers);
-
-        const { count } = await supabase
-          .from("follows")
-          .select("*", { count: "exact", head: true })
-          .eq("following_id", prof.user_id);
-        setFollowerCount(count || 0);
-      }
-
-      setLoading(false);
     };
-    fetchCreator();
-  }, [username]);
 
-  const handleUpdateProfile = async () => {
+    if (username) {
+      fetchCreator();
+    }
+  }, [username, user?.id]);
+
+  const handleUpdateProfile = useCallback(async () => {
     if (!user?.id) return;
     
     setUploading(true);
@@ -176,9 +191,9 @@ const CreatorProfile = () => {
     } finally {
       setUploading(false);
     }
-  };
+  }, [user?.id, profile, editFormData, avatarFile]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
@@ -188,9 +203,12 @@ const CreatorProfile = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
 
-  const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 0);
+  const totalViews = useMemo(() => 
+    posts.reduce((sum, p) => sum + (p.views || 0), 0),
+    [posts]
+  );
 
   if (loading) {
     return (
@@ -438,7 +456,13 @@ const CreatorProfile = () => {
               {/* Avatar */}
               <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl bg-primary/10 flex items-center justify-center text-5xl font-black text-primary shrink-0 overflow-hidden">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  <img 
+                    src={profile.avatar_url} 
+                    alt={profile?.display_name || "Profile"} 
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover" 
+                  />
                 ) : (
                   profile?.display_name?.[0]?.toUpperCase() || "C"
                 )}
