@@ -11,7 +11,7 @@ import PostCard from "@/components/PostCard";
 import FollowButton from "@/components/FollowButton";
 
 const CreatorProfile = () => {
-  const { userId } = useParams();
+  const { username } = useParams();
   const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
@@ -31,26 +31,23 @@ const CreatorProfile = () => {
     instagram_url: "",
     location: "",
     expertise: "",
-    company: "",
-    phone: "",
-    years_experience: "",
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>("");
   const [uploading, setUploading] = useState(false);
-
-  const isOwnProfile = user?.id === userId;
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
     const fetchCreator = async () => {
       const { data: prof } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", userId!)
+        .eq("display_name", username!)
         .single() as any;
       if (prof) {
         const profileData = prof as any;
         setProfile(prof);
+        setIsOwnProfile(user?.id === profileData.user_id);
         setEditFormData({
           display_name: profileData.display_name || "",
           full_name: profileData.full_name || "",
@@ -62,41 +59,40 @@ const CreatorProfile = () => {
           instagram_url: profileData.instagram_url || "",
           location: profileData.location || "",
           expertise: profileData.expertise || "",
-          company: profileData.company || "",
-          phone: profileData.phone || "",
-          years_experience: profileData.years_experience || "",
         });
         if (profileData.avatar_url) {
           setAvatarPreview(profileData.avatar_url);
         }
       }
 
-      const { data: creatorPosts } = await supabase
-        .from("posts")
-        .select("*, categories(name, slug)")
-        .eq("author_id", userId!)
-        .eq("published", true)
-        .order("created_at", { ascending: false });
-      if (creatorPosts) setPosts(creatorPosts);
+      if (prof?.user_id) {
+        const { data: creatorPosts } = await supabase
+          .from("posts")
+          .select("*, categories(name, slug)")
+          .eq("author_id", prof.user_id)
+          .eq("published", true)
+          .order("created_at", { ascending: false });
+        if (creatorPosts) setPosts(creatorPosts);
 
-      const { data: researchPapers } = await supabase
-        .from("research_papers")
-        .select("*")
-        .eq("author_id", userId!)
-        .not("published_at", "is", null)
-        .order("published_at", { ascending: false });
-      if (researchPapers) setPapers(researchPapers);
+        const { data: researchPapers } = await supabase
+          .from("research_papers")
+          .select("*")
+          .eq("author_id", prof.user_id)
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false });
+        if (researchPapers) setPapers(researchPapers);
 
-      const { count } = await supabase
-        .from("follows")
-        .select("*", { count: "exact", head: true })
-        .eq("following_id", userId!);
-      setFollowerCount(count || 0);
+        const { count } = await supabase
+          .from("follows")
+          .select("*", { count: "exact", head: true })
+          .eq("following_id", prof.user_id);
+        setFollowerCount(count || 0);
+      }
 
       setLoading(false);
     };
     fetchCreator();
-  }, [userId]);
+  }, [username]);
 
   const handleUpdateProfile = async () => {
     if (!user?.id) return;
@@ -111,9 +107,6 @@ const CreatorProfile = () => {
       if (editFormData.bio) updateData.bio = editFormData.bio;
       if (editFormData.website) updateData.website = editFormData.website;
       if (editFormData.location) updateData.location = editFormData.location;
-      if (editFormData.company) updateData.company = editFormData.company;
-      if (editFormData.phone) updateData.phone = editFormData.phone;
-      if (editFormData.years_experience) updateData.years_experience = editFormData.years_experience;
       if (editFormData.expertise) updateData.expertise = editFormData.expertise;
       if (editFormData.twitter_url) updateData.twitter_url = editFormData.twitter_url;
       if (editFormData.linkedin_url) updateData.linkedin_url = editFormData.linkedin_url;
@@ -340,42 +333,6 @@ const CreatorProfile = () => {
                     />
                   </div>
 
-                  {/* Company */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Company / Organization</label>
-                    <input
-                      type="text"
-                      value={editFormData.company}
-                      onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
-                      placeholder="Your company name"
-                    />
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={editFormData.phone}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-
-                  {/* Years of Experience */}
-                  <div>
-                    <label className="block text-sm font-semibold mb-2">Years of Experience</label>
-                    <input
-                      type="text"
-                      value={editFormData.years_experience}
-                      onChange={(e) => setEditFormData({ ...editFormData, years_experience: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border border-border bg-secondary text-foreground focus:outline-none focus:border-primary"
-                      placeholder="e.g., 5+ years or 2 years"
-                    />
-                  </div>
-
                   {/* Expertise */}
                   <div>
                     <label className="block text-sm font-semibold mb-2">Expertise / Skills</label>
@@ -495,21 +452,11 @@ const CreatorProfile = () => {
                     <p className="text-xs sm:text-sm text-muted-foreground font-semibold mt-0.5">@{profile?.display_name || "creator"}</p>
                     {profile?.bio && <p className="text-sm sm:text-base text-muted-foreground mt-2">{profile.bio}</p>}
                     
-                    {/* Location, Company, Experience & Expertise */}
+                    {/* Location & Expertise */}
                     <div className="flex flex-wrap items-center gap-2 mt-3">
                       {profile?.location && (
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-xs font-semibold text-primary">
                           📍 {profile.location}
-                        </span>
-                      )}
-                      {profile?.company && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-500/10 text-xs font-semibold text-blue-600 dark:text-blue-400">
-                          💼 {profile.company}
-                        </span>
-                      )}
-                      {profile?.years_experience && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-500/10 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                          ⭐ {profile.years_experience}
                         </span>
                       )}
                       {profile?.expertise && (
@@ -553,7 +500,7 @@ const CreatorProfile = () => {
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2">
-                  {!isOwnProfile && userId && <FollowButton authorId={userId} />}
+                  {!isOwnProfile && profile?.user_id && <FollowButton authorId={profile.user_id} />}
                   {profile?.website && (
                     <motion.a
                       href={profile.website}

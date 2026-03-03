@@ -80,7 +80,7 @@ const AuthorSpotlight = () => {
           {authors.map((author) => (
             <motion.div key={author.user_id} variants={item} whileHover={{ y: -6 }}>
               <Link
-                to={`/creator/${author.user_id}`}
+                to={`/creator/${author.display_name}`}
                 className="group block p-6 transition-all duration-300 text-center"
               >
                 <motion.div

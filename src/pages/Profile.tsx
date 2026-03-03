@@ -302,7 +302,7 @@ const Profile = () => {
                       </div>
                       <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto" />
                     </Link>
-                    <Link to={`/creator/${user?.id}`} className="flex items-center gap-3 rounded-xl border border-border p-4 hover:bg-secondary hover:border-primary/30 transition-all group">
+                    <Link to={`/creator/${profile?.display_name}`} className="flex items-center gap-3 rounded-xl border border-border p-4 hover:bg-secondary hover:border-primary/30 transition-all group">
                       <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
                         <Eye className="h-5 w-5 text-green-500" />
                       </div>
