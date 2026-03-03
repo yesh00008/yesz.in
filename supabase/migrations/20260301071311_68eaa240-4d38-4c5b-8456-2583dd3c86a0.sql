@@ -30,7 +30,12 @@ CREATE POLICY "System can insert notifications"
   WITH CHECK (true);
 
 -- Enable realtime for notifications
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS public.notifications;
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+EXCEPTION WHEN duplicate_object THEN
+  NULL;
+END$$;
 
 -- Function to create notification on new comment
 CREATE OR REPLACE FUNCTION public.notify_on_comment()
