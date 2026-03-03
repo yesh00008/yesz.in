@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Eye, Share2, MessageCircle, Heart } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Share2, MessageCircle, Heart, Loader2, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,19 +13,34 @@ import PostReactions from "@/components/PostReactions";
 import CommentsSection from "@/components/CommentsSection";
 import SocialShareButtons from "@/components/SocialShareButtons";
 import ReadingTimeEstimator from "@/components/ReadingTimeEstimator";
+import AdBanner from "@/components/AdBanner";
+
+const AI_API_URL = "https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==";
 
 interface ContentBlock {
   id: string;
-  type: "text" | "heading" | "image" | "video" | "list";
+  type: "text" | "heading" | "heading2" | "heading3" | "image" | "video" | "list" | "ordered-list" | "quote" | "code" | "divider" | "callout" | "abstract" | "references" | "image-grid" | "table";
   content: string;
   styles?: {
     fontSize?: string;
     alignment?: "left" | "center" | "right";
     color?: string;
+    bgColor?: string;
+    fontFamily?: string;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
     imageWidth?: string;
     imageHeight?: string;
     imageAlignment?: "left" | "center" | "right";
     caption?: string;
+    gridColumns?: number;
+    gridImages?: string[];
+    gridCaptions?: string[];
+    tableRows?: number;
+    tableCols?: number;
+    tableHeaders?: string[];
+    tableData?: string[][];
   };
 }
 
@@ -35,6 +50,47 @@ const BlogPost = () => {
   const [post, setPost] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSummarizing, setAiSummarizing] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+
+  const handleAISummarize = async () => {
+    if (!post) return;
+    setShowAiPanel(true);
+    setAiSummarizing(true);
+    setAiSummary("");
+    try {
+      let textContent = post.title + ". " + (post.summary || "");
+      try {
+        const blocks = JSON.parse(post.content);
+        if (Array.isArray(blocks)) {
+          textContent += " " + blocks.map((b: any) => b.content).join(" ");
+        }
+      } catch { textContent += " " + (post.content || ""); }
+      const prompt = `Summarize this blog post in a concise paragraph (4-6 sentences). Focus on the key points and takeaways:\n\n${textContent.slice(0, 3000)}`;
+      const res = await fetch(AI_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      
+      if (res.status === 429) {
+        setAiSummary("Rate limit reached. Please wait a moment and try again.");
+      } else if (!res.ok) {
+        setAiSummary("Unable to generate summary. Please try again.");
+      } else {
+        const data = await res.json();
+        if (data.status === "success" && data.text) {
+          setAiSummary(data.text.trim());
+        } else {
+          setAiSummary("Unable to generate summary. Please try again.");
+        }
+      }
+    } catch { 
+      setAiSummary("Network error. Please check your connection and try again."); 
+    }
+    setAiSummarizing(false);
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -141,6 +197,50 @@ const BlogPost = () => {
               </p>
             )}
 
+            {/* AI Summarize Button */}
+            <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={handleAISummarize}
+                disabled={aiSummarizing}
+                className="group inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-sm font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-black">Y</span>
+                </div>
+                {aiSummarizing ? "Summarizing..." : "AI Summarize"}
+                {aiSummarizing && <Loader2 className="h-4 w-4 animate-spin" />}
+              </button>
+            </div>
+
+            {/* AI Summary Panel */}
+            {showAiPanel && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-10 relative"
+              >
+                <button onClick={() => setShowAiPanel(false)} className="absolute top-3 right-3 p-1 rounded-full hover:bg-primary/10 transition-colors">
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-black text-primary-foreground">Y</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">AI Summary</p>
+                    {aiSummarizing ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Analyzing content...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed text-foreground">{aiSummary}</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Post Meta Card */}
             <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-6 mb-10 shadow-card">
               <div className="flex items-center flex-wrap gap-6">
@@ -203,6 +303,9 @@ const BlogPost = () => {
               </motion.div>
             )}
 
+            {/* Ad Banner - After Featured Image */}
+            <AdBanner slot="5634284523" format="auto" className="max-w-4xl mx-auto" />
+
             {/* Content */}
             {post.content && (
               <motion.div
@@ -237,6 +340,13 @@ const BlogPost = () => {
                                       : "1rem",
                                     textAlign: block.styles?.alignment || "left",
                                     color: block.styles?.color || undefined,
+                                    backgroundColor: block.styles?.bgColor || undefined,
+                                    fontFamily: block.styles?.fontFamily || undefined,
+                                    fontWeight: block.styles?.bold ? "bold" : undefined,
+                                    fontStyle: block.styles?.italic ? "italic" : undefined,
+                                    textDecoration: block.styles?.underline ? "underline" : undefined,
+                                    padding: block.styles?.bgColor ? "0.5rem 0.75rem" : undefined,
+                                    borderRadius: block.styles?.bgColor ? "0.5rem" : undefined,
                                   }}
                                 >
                                   {block.content.split('\n').map((line, i) => (
@@ -263,6 +373,20 @@ const BlogPost = () => {
                                 >
                                   {block.content}
                                 </h2>
+                              )}
+
+                              {/* Heading2 Block */}
+                              {block.type === "heading2" && (
+                                <h3 className="text-xl font-bold text-foreground mb-3 mt-8" style={{ textAlign: block.styles?.alignment || "left" }}>
+                                  {block.content}
+                                </h3>
+                              )}
+
+                              {/* Heading3 Block */}
+                              {block.type === "heading3" && (
+                                <h4 className="text-lg font-semibold text-foreground mb-2 mt-6" style={{ textAlign: block.styles?.alignment || "left" }}>
+                                  {block.content}
+                                </h4>
                               )}
 
                               {/* Image Block */}
@@ -343,6 +467,101 @@ const BlogPost = () => {
                                   ))}
                                 </ul>
                               )}
+
+                              {/* Ordered List Block */}
+                              {block.type === "ordered-list" && (
+                                <ol className="space-y-2 text-lg text-muted-foreground list-decimal list-inside">
+                                  {block.content.split('\n').filter(Boolean).map((item, i) => (
+                                    <li key={i}>{item.replace(/^\d+\.\s*/, '')}</li>
+                                  ))}
+                                </ol>
+                              )}
+
+                              {/* Quote Block */}
+                              {block.type === "quote" && (
+                                <blockquote className="border-l-4 border-primary pl-6 py-3 my-6 italic text-muted-foreground bg-primary/5 rounded-r-lg text-lg">
+                                  {block.content}
+                                </blockquote>
+                              )}
+
+                              {/* Code Block */}
+                              {block.type === "code" && (
+                                <pre className="bg-gray-900 text-gray-100 rounded-xl p-5 my-6 overflow-x-auto text-sm font-mono border border-gray-800">
+                                  <code>{block.content}</code>
+                                </pre>
+                              )}
+
+                              {/* Divider Block */}
+                              {block.type === "divider" && (
+                                <hr className="my-10 border-border" />
+                              )}
+
+                              {/* Callout Block */}
+                              {block.type === "callout" && (
+                                <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 my-6">
+                                  <p className="text-sm text-foreground">{block.content}</p>
+                                </div>
+                              )}
+
+                              {/* Abstract Block */}
+                              {block.type === "abstract" && (
+                                <div className="bg-card/50 rounded-xl p-6 my-6 border border-border">
+                                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-3">Abstract</h3>
+                                  <p className="text-sm leading-relaxed text-muted-foreground italic">{block.content}</p>
+                                </div>
+                              )}
+
+                              {/* References Block */}
+                              {block.type === "references" && (
+                                <div className="mt-10 border-t border-border pt-6">
+                                  <h3 className="text-lg font-bold mb-4 text-foreground">References</h3>
+                                  <div className="space-y-2 text-sm text-muted-foreground">
+                                    {block.content.split('\n').filter(Boolean).map((ref, i) => (
+                                      <p key={i} className="pl-8 -indent-8"><span className="font-semibold">[{i + 1}]</span> {ref}</p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Image Grid Block */}
+                              {block.type === "image-grid" && block.styles?.gridImages && (
+                                <div className={`grid gap-4 my-6`} style={{ gridTemplateColumns: `repeat(${block.styles?.gridColumns || 2}, 1fr)` }}>
+                                  {block.styles.gridImages.filter(Boolean).map((img, i) => (
+                                    <div key={i}>
+                                      <img src={img} alt={block.styles?.gridCaptions?.[i] || ""} className="w-full rounded-xl object-cover aspect-square hover:scale-105 transition-transform duration-300" loading="lazy" />
+                                      {block.styles?.gridCaptions?.[i] && (
+                                        <p className="text-xs text-muted-foreground mt-2 text-center italic">{block.styles.gridCaptions[i]}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Table Block */}
+                              {block.type === "table" && block.styles?.tableData && (
+                                <div className="overflow-x-auto my-6 rounded-xl border border-border">
+                                  <table className="w-full text-sm">
+                                    {block.styles?.tableHeaders && (
+                                      <thead className="bg-secondary">
+                                        <tr>
+                                          {block.styles.tableHeaders.map((h, i) => (
+                                            <th key={i} className="px-4 py-3 text-left font-semibold text-foreground border-b border-border">{h}</th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                    )}
+                                    <tbody>
+                                      {block.styles.tableData.map((row, ri) => (
+                                        <tr key={ri} className="border-b border-border last:border-b-0 hover:bg-secondary/50 transition-colors">
+                                          {row.map((cell, ci) => (
+                                            <td key={ci} className="px-4 py-3 text-muted-foreground">{cell}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </motion.div>
                           ))}
                         </div>
@@ -362,6 +581,9 @@ const BlogPost = () => {
                 })()}
               </motion.div>
             )}
+
+            {/* Ad Banner - Middle of Content */}
+            <AdBanner slot="7431057282" format="fluid" layoutKey="-gw-3+1f-3d+2z" className="max-w-4xl mx-auto" />
 
             {/* Divider */}
             <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-12" />
@@ -420,6 +642,13 @@ const BlogPost = () => {
           </div>
         </section>
       )}
+
+      {/* Ad Banner - Bottom of Page */}
+      <div className="py-12 border-t border-border">
+        <div className="container max-w-7xl">
+          <AdBanner slot="1408574414" format="autorelaxed" className="max-w-4xl mx-auto" />
+        </div>
+      </div>
 
       <Footer />
       <BackToTop />

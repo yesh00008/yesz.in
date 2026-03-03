@@ -376,6 +376,101 @@ export type Database = {
           },
         ]
       }
+      research_papers: {
+        Row: {
+          id: string
+          title: string
+          slug: string
+          abstract: string | null
+          content: string | null
+          cover_image: string | null
+          category_id: string | null
+          author_id: string
+          authors_list: string | null
+          institution: string | null
+          doi: string | null
+          keywords: string | null
+          published: boolean
+          featured: boolean
+          peer_reviewed: boolean
+          read_time: string | null
+          views: number
+          downloads: number
+          citations: number
+          meta_description: string | null
+          meta_keywords: string | null
+          status: string
+          paper_type: string
+          created_at: string
+          updated_at: string
+          published_at: string | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          slug: string
+          abstract?: string | null
+          content?: string | null
+          cover_image?: string | null
+          category_id?: string | null
+          author_id: string
+          authors_list?: string | null
+          institution?: string | null
+          doi?: string | null
+          keywords?: string | null
+          published?: boolean
+          featured?: boolean
+          peer_reviewed?: boolean
+          read_time?: string | null
+          views?: number
+          downloads?: number
+          citations?: number
+          meta_description?: string | null
+          meta_keywords?: string | null
+          status?: string
+          paper_type?: string
+          created_at?: string
+          updated_at?: string
+          published_at?: string | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          slug?: string
+          abstract?: string | null
+          content?: string | null
+          cover_image?: string | null
+          category_id?: string | null
+          author_id?: string
+          authors_list?: string | null
+          institution?: string | null
+          doi?: string | null
+          keywords?: string | null
+          published?: boolean
+          featured?: boolean
+          peer_reviewed?: boolean
+          read_time?: string | null
+          views?: number
+          downloads?: number
+          citations?: number
+          meta_description?: string | null
+          meta_keywords?: string | null
+          status?: string
+          paper_type?: string
+          created_at?: string
+          updated_at?: string
+          published_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_papers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string

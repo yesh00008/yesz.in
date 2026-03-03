@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, Menu, X, User, LogOut, ChevronDown, Bookmark, TrendingUp, PenTool } from "lucide-react";
+import { Search, Menu, X, User, LogOut, ChevronDown, Bookmark, TrendingUp, PenTool, GraduationCap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,6 +133,14 @@ const Navbar = ({ onSearchOpen }: NavbarProps) => {
             </AnimatePresence>
           </div>
 
+          <Link
+            to="/research-papers"
+            className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-lg ${isActive("/research-papers") || location.pathname.startsWith("/research/") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+          >
+            <GraduationCap className="h-3.5 w-3.5" />
+            Research
+          </Link>
+
           {navLinks.slice(1).map((link) => (
             <Link
               key={link.label}
@@ -226,6 +234,10 @@ const Navbar = ({ onSearchOpen }: NavbarProps) => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              <Link to="/research-papers" onClick={() => setMobileOpen(false)} className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive("/research-papers") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}>
+                <GraduationCap className="h-4 w-4" /> Research Papers
+              </Link>
 
               {navLinks.slice(1).map((link) => (
                 <Link key={link.label} to={link.to} onClick={() => setMobileOpen(false)}

@@ -28,6 +28,8 @@ import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 import Sponsorship from "./pages/Sponsorship";
 import Admin from "./pages/Admin";
+import ResearchPapers from "./pages/ResearchPapers";
+import ResearchPaper from "./pages/ResearchPaper";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ const AnimatedRoutes = () => {
         <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
         <Route path="/terms-of-service" element={<PageTransition><TermsOfService /></PageTransition>} />
         <Route path="/sponsorship" element={<PageTransition><Sponsorship /></PageTransition>} />
+        <Route path="/research-papers" element={<PageTransition><ResearchPapers /></PageTransition>} />
+        <Route path="/research/:slug" element={<PageTransition><ResearchPaper /></PageTransition>} />
         <Route path="/admin" element={<PageTransition><Admin /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
@@ -70,7 +74,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <AnimatedRoutes />
         </AuthProvider>

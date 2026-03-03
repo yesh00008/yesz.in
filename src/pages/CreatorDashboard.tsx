@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
   PenTool, Eye, TrendingUp, DollarSign, Plus, FileText,
-  Clock, CheckCircle, Edit3, Trash2, BarChart3, Users
+  Clock, CheckCircle, Edit3, Trash2, BarChart3, Users, GraduationCap
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,18 +17,22 @@ const CreatorDashboard = () => {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
+  const [papers, setPapers] = useState<any[]>([]);
   const [tips, setTips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "published" | "draft">("all");
+  const [contentType, setContentType] = useState<"posts" | "papers">("posts");
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
     const fetchData = async () => {
-      const [postsRes, tipsRes] = await Promise.all([
+      const [postsRes, papersRes, tipsRes] = await Promise.all([
         supabase.from("posts").select("*, categories(name)").eq("author_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("research_papers").select("*, categories(name)").eq("author_id", user.id).order("created_at", { ascending: false }),
         supabase.from("creator_tips").select("*").eq("creator_id", user.id).order("created_at", { ascending: false }),
       ]);
       if (postsRes.data) setPosts(postsRes.data);
+      if (papersRes.data) setPapers(papersRes.data);
       if (tipsRes.data) setTips(tipsRes.data);
       setLoading(false);
     };
@@ -81,6 +85,12 @@ const CreatorDashboard = () => {
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-primary hover:brightness-110 transition-all"
               >
                 <Plus className="h-4 w-4" /> New Post
+              </Link>
+              <Link
+                to="/creator/write?type=research"
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-600 transition-all"
+              >
+                <GraduationCap className="h-4 w-4" /> New Paper
               </Link>
             </div>
 

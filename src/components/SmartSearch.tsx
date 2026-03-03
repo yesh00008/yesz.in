@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, X, TrendingUp, Clock, Sparkles } from "lucide-react";
+import { Search, X, TrendingUp, Clock, Sparkles, GraduationCap, FileText, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+
+const AI_API_URL = "https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==";
 
 interface SmartSearchProps {
   open: boolean;
@@ -11,23 +13,26 @@ interface SmartSearchProps {
 
 const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [postResults, setPostResults] = useState<any[]>([]);
+  const [paperResults, setPaperResults] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [trending, setTrending] = useState<any[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 100);
       setQuery("");
-      setResults([]);
+      setPostResults([]);
+      setPaperResults([]);
       setSuggestions([]);
-      // Load recent searches from localStorage
+      setAiAnswer("");
       const saved = localStorage.getItem("recentSearches");
       if (saved) setRecent(JSON.parse(saved).slice(0, 5));
-      // Load trending posts
       supabase
         .from("posts")
         .select("id, title, slug, image_url, views, categories(name)")
@@ -40,42 +45,71 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
 
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
+      setPostResults([]);
+      setPaperResults([]);
       setSuggestions([]);
+      setAiAnswer("");
       return;
     }
     const timer = setTimeout(async () => {
       setLoading(true);
-      // Search posts
       const { data: posts } = await supabase
         .from("posts")
         .select("id, title, slug, summary, image_url, read_time, views, categories(name)")
         .eq("published", true)
         .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
         .order("views", { ascending: false })
-        .limit(8);
-      if (posts) setResults(posts);
+        .limit(6);
+      if (posts) setPostResults(posts);
 
-      // Generate auto-suggestions from categories and tags
+      const { data: papers } = await supabase
+        .from("research_papers")
+        .select("id, title, slug, abstract, cover_image, read_time, views, paper_type, categories(name)")
+        .eq("published", true)
+        .or(`title.ilike.%${query}%,abstract.ilike.%${query}%,authors_list.ilike.%${query}%`)
+        .order("views", { ascending: false })
+        .limit(4);
+      if (papers) setPaperResults(papers);
+
       const { data: cats } = await supabase
         .from("categories")
         .select("name")
         .ilike("name", `%${query}%`)
         .limit(3);
-      const { data: tags } = await supabase
-        .from("tags")
-        .select("name")
-        .ilike("name", `%${query}%`)
-        .limit(3);
-      const sugs = [
-        ...(cats?.map((c) => c.name) || []),
-        ...(tags?.map((t) => `#${t.name}`) || []),
-      ];
-      setSuggestions(sugs);
+      setSuggestions(cats?.map((c) => c.name) || []);
       setLoading(false);
-    }, 250);
+
+      const allResults = [...(posts || []), ...(papers || [])];
+      generateAIAnswer(query, allResults);
+    }, 300);
     return () => clearTimeout(timer);
   }, [query]);
+
+  const generateAIAnswer = async (q: string, results: any[]) => {
+    setAiLoading(true);
+    try {
+      const context = results.slice(0, 5).map(r =>
+        `"${r.title}" - ${r.summary || r.abstract || ""}`
+      ).join(". ");
+      const prompt = context
+        ? `You are a tech blog search assistant. Based on these articles: ${context}. Answer this in exactly 2 short sentences: "${q}"`
+        : `You are a tech blog search assistant. Answer this in exactly 2 short sentences: "${q}"`;
+      const response = await fetch(AI_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await response.json();
+      if (data.status === "success" && data.text) {
+        setAiAnswer(data.text.trim());
+      } else {
+        setAiAnswer("");
+      }
+    } catch {
+      setAiAnswer("");
+    }
+    setAiLoading(false);
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -102,6 +136,8 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
     return text.replace(regex, '<mark class="bg-primary/20 text-primary rounded px-0.5">$1</mark>');
   };
 
+  const totalResults = postResults.length + paperResults.length;
+
   return (
     <AnimatePresence>
       {open && (
@@ -109,14 +145,14 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4"
+          className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh] px-4"
         >
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={onClose} />
           <motion.div
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="relative w-full max-w-xl rounded-2xl border border-border bg-background shadow-2xl overflow-hidden"
+            className="relative w-full max-w-2xl rounded-2xl border border-border bg-background shadow-2xl overflow-hidden"
           >
             {/* Search input */}
             <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
@@ -125,7 +161,7 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search articles, categories, tags..."
+                placeholder="Search articles, research papers, categories..."
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
               {loading && (
@@ -138,13 +174,13 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
               </button>
             </div>
 
-            {/* Auto-suggestions */}
+            {/* Suggestions */}
             {suggestions.length > 0 && query.trim() && (
               <div className="px-4 py-2 border-b border-border flex flex-wrap gap-1.5">
                 {suggestions.map((s) => (
                   <button
                     key={s}
-                    onClick={() => setQuery(s.replace("#", ""))}
+                    onClick={() => setQuery(s)}
                     className="text-[11px] px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
                   >
                     {s}
@@ -153,45 +189,108 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
               </div>
             )}
 
-            <div className="max-h-[60vh] overflow-y-auto">
-              {/* Results */}
+            <div className="max-h-[65vh] overflow-y-auto">
               {query.trim() ? (
-                results.length === 0 && !loading ? (
-                  <div className="px-4 py-12 text-center">
-                    <Search className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
-                    <p className="text-sm font-medium text-muted-foreground">No results for "{query}"</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">Try different keywords or browse categories</p>
-                  </div>
-                ) : (
-                  <div className="p-2">
-                    {results.map((post) => (
-                      <Link
-                        key={post.id}
-                        to={`/post/${post.slug}`}
-                        onClick={handleResultClick}
-                        className="flex items-start gap-3 rounded-xl p-3 hover:bg-secondary transition-colors group"
-                      >
-                        {post.image_url && (
-                          <img src={post.image_url} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <h4
-                            className="text-sm font-semibold line-clamp-2 group-hover:text-primary transition-colors"
-                            dangerouslySetInnerHTML={{ __html: highlightMatch(post.title) }}
-                          />
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[11px] text-primary font-medium">{post.categories?.name || "General"}</span>
-                            <span className="text-[10px] text-muted-foreground">· {post.read_time || "5 min"}</span>
-                            <span className="text-[10px] text-muted-foreground">· {post.views || 0} views</span>
-                          </div>
+                <>
+                  {/* AI Answer */}
+                  {(aiLoading || aiAnswer) && (
+                    <div className="px-4 pt-3 pb-2 border-b border-border">
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-[10px] font-black text-primary-foreground">Y</span>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
-                )
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-primary mb-1">AI Answer</p>
+                          {aiLoading ? (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>Thinking...</span>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-foreground leading-relaxed">{aiAnswer}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {totalResults === 0 && !loading ? (
+                    <div className="px-4 py-12 text-center">
+                      <Search className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm font-medium text-muted-foreground">No results for "{query}"</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Try different keywords or browse categories</p>
+                    </div>
+                  ) : (
+                    <div className="p-2">
+                      {postResults.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
+                            <FileText className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Blog Posts</span>
+                          </div>
+                          {postResults.map((post) => (
+                            <Link
+                              key={post.id}
+                              to={`/post/${post.slug}`}
+                              onClick={handleResultClick}
+                              className="flex items-start gap-3 rounded-xl p-3 hover:bg-secondary transition-colors group"
+                            >
+                              {post.image_url && (
+                                <img src={post.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <h4
+                                  className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors"
+                                  dangerouslySetInnerHTML={{ __html: highlightMatch(post.title) }}
+                                />
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[11px] text-primary font-medium">{post.categories?.name || "General"}</span>
+                                  <span className="text-[10px] text-muted-foreground">· {post.read_time || "5 min"}</span>
+                                  <span className="text-[10px] text-muted-foreground">· {post.views || 0} views</span>
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </>
+                      )}
+
+                      {paperResults.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-1.5 px-3 pt-3 pb-1">
+                            <GraduationCap className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Research Papers</span>
+                          </div>
+                          {paperResults.map((paper) => (
+                            <Link
+                              key={paper.id}
+                              to={`/research/${paper.slug}`}
+                              onClick={handleResultClick}
+                              className="flex items-start gap-3 rounded-xl p-3 hover:bg-secondary transition-colors group"
+                            >
+                              {paper.cover_image && (
+                                <img src={paper.cover_image} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <h4
+                                  className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors"
+                                  dangerouslySetInnerHTML={{ __html: highlightMatch(paper.title) }}
+                                />
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                                    {paper.paper_type?.replace("-", " ") || "Research"}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">{paper.categories?.name}</span>
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="p-4 space-y-6">
-                  {/* Recent searches */}
                   {recent.length > 0 && (
                     <div>
                       <div className="flex items-center gap-1.5 mb-2">
@@ -212,7 +311,6 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
                     </div>
                   )}
 
-                  {/* Trending */}
                   {trending.length > 0 && (
                     <div>
                       <div className="flex items-center gap-1.5 mb-2">
