@@ -72,7 +72,7 @@ BEGIN
   FROM public.profiles WHERE user_id = NEW.follower_id;
   
   INSERT INTO public.notifications (user_id, type, title, message, link)
-  VALUES (NEW.following_id, 'follow', 'New follower', follower_name || ' started following you', '/creator/' || NEW.follower_id);
+  VALUES (NEW.following_id, 'follow', 'New follower', follower_name || ' started following you', '/' || follower_name);
   RETURN NEW;
 END;
 $$;
