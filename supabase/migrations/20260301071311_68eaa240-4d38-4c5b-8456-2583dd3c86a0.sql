@@ -13,20 +13,24 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Users can view their own notifications"
+DROP POLICY IF EXISTS "Users can view their own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Users can update their own notifications" ON public.notifications;
+DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
+
+CREATE POLICY "Users can view their own notifications"
   ON public.notifications FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can update their own notifications"
+CREATE POLICY "Users can update their own notifications"
   ON public.notifications FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "System can insert notifications"
+CREATE POLICY "System can insert notifications"
   ON public.notifications FOR INSERT
   WITH CHECK (true);
 
 -- Enable realtime for notifications
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS public.notifications;
 
 -- Function to create notification on new comment
 CREATE OR REPLACE FUNCTION public.notify_on_comment()
@@ -54,7 +58,8 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER IF NOT EXISTS on_new_comment
+DROP TRIGGER IF EXISTS on_new_comment ON public.comments;
+CREATE TRIGGER on_new_comment
   AFTER INSERT ON public.comments
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_comment();
 
@@ -77,6 +82,5 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER IF NOT EXISTS on_new_follow
-  AFTER INSERT ON public.follows
-  FOR EACH ROW EXECUTE FUNCTION public.notify_on_follow();
+DROP TRIGGER IF EXISTS on_new_follow ON public.follows;
+CREATE TRIGGER on_new_follow
