@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Eye, Share2, MessageCircle, Heart } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Share2, MessageCircle, Heart, Loader2, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,72 @@ const BlogPost = () => {
   const [post, setPost] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiSummary, setAiSummary] = useState("");
+  const [aiSummarizing, setAiSummarizing] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(false);
+
+  const handleAISummarize = async () => {
+    if (!post) return;
+    setShowAiPanel(true);
+    setAiSummarizing(true);
+    setAiSummary("");
+    try {
+      let textContent = post.title + ". " + (post.summary || "");
+      try {
+        const blocks = JSON.parse(post.content);
+        if (Array.isArray(blocks)) {
+          textContent += " " + blocks.map((b: any) => b.content).join(" ");
+        }
+      } catch { textContent += " " + (post.content || ""); }
+      const prompt = `Summarize this blog post in a concise paragraph (4-6 sentences). Focus on the key points and takeaways:\n\n${textContent.slice(0, 3000)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 30000); // 30s timeout
+      
+      try {
+        const res = await fetch("https://YOUR_SUPABASE_URL/functions/v1/ai-summarize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, contentType: "post" }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (res.status === 429) {
+          setAiSummary("Rate limit reached. Please wait a moment and try again.");
+        } else if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          setAiSummary(errorData.error || "Unable to generate summary. Please try again.");
+        } else {
+          try {
+            const data = await res.json();
+            if (data.status === "success" && data.text) {
+              setAiSummary(data.text.trim());
+            } else {
+              setAiSummary(data.error || "Unable to generate summary. Please try again.");
+            }
+          } catch (parseErr) {
+            console.error("JSON parse error:", parseErr);
+            setAiSummary("Unable to parse response. Please try again.");
+          }
+        }
+      } catch (fetchErr: any) {
+        if (fetchErr.name === "AbortError") {
+          console.error("AI request timeout");
+          setAiSummary("Request timed out. Please try again.");
+        } else {
+          console.error("Fetch error:", fetchErr);
+          setAiSummary("Network error. Please check your connection and try again.");
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setAiSummary("An unexpected error occurred. Please try again."); 
+    } finally {
+      setAiSummarizing(false);
+    }
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -169,6 +235,35 @@ const BlogPost = () => {
             </div>
 
 
+
+            {/* AI Summary Panel */}
+            {showAiPanel && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-2xl border border-primary/20 bg-primary/5 p-6 mb-10 relative"
+              >
+                <button onClick={() => setShowAiPanel(false)} className="absolute top-3 right-3 p-1 rounded-full hover:bg-primary/10 transition-colors">
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-black text-primary-foreground">Y</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">AI Summary</p>
+                    {aiSummarizing ? (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Analyzing content...</span>
+                      </div>
+                    ) : (
+                      <p className="text-sm leading-relaxed text-foreground">{aiSummary}</p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Post Meta Card */}
             <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-6 mb-10 shadow-card">
