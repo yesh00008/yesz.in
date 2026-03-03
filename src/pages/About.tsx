@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Zap, Users, Globe, Shield, Code, Award, Mail, ArrowRight, Sparkles,
   DollarSign, BarChart3, Instagram, Youtube, CheckCircle, Megaphone,

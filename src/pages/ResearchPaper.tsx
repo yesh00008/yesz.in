@@ -19,13 +19,15 @@ interface ContentBlock {
   styles?: any;
 }
 
-const AI_API_URL = "https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==";
+// For AI summarization, call a backend endpoint instead of exposing the API key
+// Example: POST /api/ai-summarize with { content: string }
 
 const ResearchPaper = () => {
   const { slug } = useParams();
   const [paper, setPaper] = useState<any>(null);
   const [author, setAuthor] = useState<any>(null);
   const [category, setCategory] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -105,12 +107,16 @@ const ResearchPaper = () => {
     setAiSummarizing(false);
   };
 
-  const handleCiteCopy = () => {
+  const handleCiteCopy = async () => {
     if (!paper) return;
     const citation = `${paper.authors_list || "Unknown"}. "${paper.title}." Yeszz Tech Hub, ${new Date(paper.published_at || paper.created_at).getFullYear()}. ${paper.doi ? `DOI: ${paper.doi}` : ""}`;
-    navigator.clipboard.writeText(citation);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(citation);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy citation:", err);
+    }
   };
 
   const renderBlock = (block: ContentBlock) => {
@@ -134,7 +140,7 @@ const ResearchPaper = () => {
       case "image":
         return (
           <figure className="my-8 text-center">
-            <img src={block.content} alt={block.styles?.caption || ""} className="rounded-lg shadow-sm mx-auto max-w-full" style={{ width: block.styles?.imageWidth || "100%" }} loading="lazy" />
+            <img src={block.content} alt={block.styles?.caption || paper?.title || "Figure from research paper"} className="rounded-lg shadow-sm mx-auto max-w-full" style={{ width: block.styles?.imageWidth || "100%" }} loading="lazy" />
             {block.styles?.caption && (
               <figcaption className="text-xs text-gray-500 mt-3 italic font-serif">
                 <span className="font-semibold not-italic">Figure.</span> {block.styles.caption}
@@ -146,9 +152,9 @@ const ResearchPaper = () => {
         return (
           <div className="aspect-video rounded-lg overflow-hidden shadow-sm my-8 border border-gray-200 dark:border-zinc-800">
             {(block.content.includes("youtube") || block.content.includes("youtu.be")) ? (
-              <iframe width="100%" height="100%" src={block.content.replace("watch?v=", "embed/").split("&")[0]} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full" />
+              <iframe width="100%" height="100%" src={block.content.replace("watch?v=", "embed/").split("&")[0]} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full border-0" />
             ) : (
-              <iframe width="100%" height="100%" src={block.content.replace("vimeo.com/", "player.vimeo.com/video/")} frameBorder="0" allowFullScreen className="w-full h-full" />
+              <iframe width="100%" height="100%" src={block.content.replace("vimeo.com/", "player.vimeo.com/video/")} allowFullScreen className="w-full h-full border-0" />
             )}
           </div>
         );

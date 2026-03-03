@@ -235,7 +235,7 @@ const Navbar = ({ onSearchOpen }: NavbarProps) => {
                 )}
               </AnimatePresence>
 
-              <Link to="/research-papers" onClick={() => setMobileOpen(false)} className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${isActive("/research-papers") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}>
+              <Link to="/research-papers" onClick={() => setMobileOpen(false)} className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${(isActive("/research-papers") || location.pathname.startsWith("/research/")) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}>
                 <GraduationCap className="h-4 w-4" /> Research Papers
               </Link>
 

@@ -17,22 +17,18 @@ const CreatorDashboard = () => {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
-  const [papers, setPapers] = useState<any[]>([]);
   const [tips, setTips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "published" | "draft">("all");
-  const [contentType, setContentType] = useState<"posts" | "papers">("posts");
 
   useEffect(() => {
     if (!user) { navigate("/auth"); return; }
     const fetchData = async () => {
-      const [postsRes, papersRes, tipsRes] = await Promise.all([
+      const [postsRes, tipsRes] = await Promise.all([
         supabase.from("posts").select("*, categories(name)").eq("author_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("research_papers").select("*, categories(name)").eq("author_id", user.id).order("created_at", { ascending: false }),
         supabase.from("creator_tips").select("*").eq("creator_id", user.id).order("created_at", { ascending: false }),
       ]);
       if (postsRes.data) setPosts(postsRes.data);
-      if (papersRes.data) setPapers(papersRes.data);
       if (tipsRes.data) setTips(tipsRes.data);
       setLoading(false);
     };

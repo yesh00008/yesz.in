@@ -1,5 +1,12 @@
 import { useEffect } from "react";
 
+// Declare window type extension for AdSense
+declare global {
+  interface Window {
+    adsbygoogle?: Array<any>;
+  }
+}
+
 interface AdBannerProps {
   format?: "auto" | "fluid" | "autorelaxed";
   slot: string;
@@ -11,7 +18,9 @@ const AdBanner = ({ format = "auto", slot, layoutKey, className = "" }: AdBanner
   useEffect(() => {
     try {
       // Push ads for display
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
+      if (window.adsbygoogle) {
+        window.adsbygoogle.push({});
+      }
     } catch (e) {
       console.error("AdSense error:", e);
     }

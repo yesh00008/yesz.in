@@ -1,7 +1,11 @@
 -- ======================================================================
--- Additional Blog Posts - 25 More SEO-Optimized Posts (March 2026)
+-- Additional Blog Posts - 20 More SEO-Optimized Posts (March 2026)
 -- Images sourced from Unsplash with direct URLs
 -- ======================================================================
+
+-- NOTE: VITE_ prefixed environment variables are bundled into the client bundle
+-- and MUST NOT be used for secrets like API keys. Use server-side environment
+-- variables (process.env) for sensitive configuration.
 
 -- Note: Uses category IDs from 05-seed-categories.sql
 -- This seed depends on the categories table being populated.
@@ -25,22 +29,22 @@ DECLARE
   cat_reviews UUID;
   cat_indian UUID;
 BEGIN
-  SELECT id INTO cat_ai FROM categories WHERE slug = 'ai';
-  SELECT id INTO cat_cyber FROM categories WHERE slug = 'cybersecurity';
-  SELECT id INTO cat_prog FROM categories WHERE slug = 'programming';
-  SELECT id INTO cat_cloud FROM categories WHERE slug = 'cloud-computing';
-  SELECT id INTO cat_devops FROM categories WHERE slug = 'devops';
-  SELECT id INTO cat_mobile FROM categories WHERE slug = 'mobile';
-  SELECT id INTO cat_gaming FROM categories WHERE slug = 'gaming';
-  SELECT id INTO cat_startups FROM categories WHERE slug = 'startups';
-  SELECT id INTO cat_gadgets FROM categories WHERE slug = 'gadgets';
-  SELECT id INTO cat_blockchain FROM categories WHERE slug = 'blockchain';
-  SELECT id INTO cat_ds FROM categories WHERE slug = 'data-science';
-  SELECT id INTO cat_iot FROM categories WHERE slug = 'iot';
-  SELECT id INTO cat_fintech FROM categories WHERE slug = 'fintech';
-  SELECT id INTO cat_edtech FROM categories WHERE slug = 'edtech';
-  SELECT id INTO cat_reviews FROM categories WHERE slug = 'reviews';
-  SELECT id INTO cat_indian FROM categories WHERE slug = 'indian-tech';
+  SELECT id INTO STRICT cat_ai FROM categories WHERE slug = 'ai';
+  SELECT id INTO STRICT cat_cyber FROM categories WHERE slug = 'cybersecurity';
+  SELECT id INTO STRICT cat_prog FROM categories WHERE slug = 'programming';
+  SELECT id INTO STRICT cat_cloud FROM categories WHERE slug = 'cloud-computing';
+  SELECT id INTO STRICT cat_devops FROM categories WHERE slug = 'devops';
+  SELECT id INTO STRICT cat_mobile FROM categories WHERE slug = 'mobile';
+  SELECT id INTO STRICT cat_gaming FROM categories WHERE slug = 'gaming';
+  SELECT id INTO STRICT cat_startups FROM categories WHERE slug = 'startups';
+  SELECT id INTO STRICT cat_gadgets FROM categories WHERE slug = 'gadgets';
+  SELECT id INTO STRICT cat_blockchain FROM categories WHERE slug = 'blockchain';
+  SELECT id INTO STRICT cat_ds FROM categories WHERE slug = 'data-science';
+  SELECT id INTO STRICT cat_iot FROM categories WHERE slug = 'iot';
+  SELECT id INTO STRICT cat_fintech FROM categories WHERE slug = 'fintech';
+  SELECT id INTO STRICT cat_edtech FROM categories WHERE slug = 'edtech';
+  SELECT id INTO STRICT cat_reviews FROM categories WHERE slug = 'reviews';
+  SELECT id INTO STRICT cat_indian FROM categories WHERE slug = 'indian-tech';
 
   -- Post 1
   INSERT INTO posts (title, slug, summary, content, image_url, category_id, published, read_time, meta_description, meta_keywords, status, published_at)
@@ -118,7 +122,7 @@ BEGIN
     'India''s Semiconductor Fab Revolution: The Tata-TSMC Story',
     'india-semiconductor-fab-tata-tsmc-2026',
     'Tata Group and TSMC''s Gujarat fab is now producing 7nm chips, marking India''s entry into advanced semiconductor manufacturing.',
-    '[{"id":"1","type":"heading","content":"India Finally Joins the Chip Race","styles":{"alignment":"left"}},{"id":"2","type":"text","content":"The Dholera Special Investment Region in Gujarat is home to India''s first advanced semiconductor fabrication plant. The Tata-TSMC joint venture began producing 7nm chips in January 2026, a historic milestone that positions India as a serious player in the global semiconductor supply chain.\n\nThe $11 billion facility employs over 8,000 engineers and technicians, with plans to scale to 28,000 workers by 2028. Initial production focuses on automotive and IoT chips, with plans to move to 5nm by 2028.","styles":{"alignment":"left"}},{"id":"3","type":"quote","content":"This is not just a factory — it is the foundation of India''s digital sovereignty. — Ratan Tata, Chairman Emeritus, Tata Sons","styles":{}},{"id":"4","type":"text","content":"The Indian government''s $10 billion semiconductor incentive scheme, combined with TSMC''s manufacturing expertise because Tata''s capital, has created a blueprint that other emerging economies are now studying.","styles":{"alignment":"left"}}]',
+    '[{"id":"1","type":"heading","content":"India Finally Joins the Chip Race","styles":{"alignment":"left"}},{"id":"2","type":"text","content":"The Dholera Special Investment Region in Gujarat is home to India''s first advanced semiconductor fabrication plant. The Tata-TSMC joint venture began producing 7nm chips in January 2026, a historic milestone that positions India as a serious player in the global semiconductor supply chain.\n\nThe $11 billion facility employs over 8,000 engineers and technicians, with plans to scale to 28,000 workers by 2028. Initial production focuses on automotive and IoT chips, with plans to move to 5nm by 2028.","styles":{"alignment":"left"}},{"id":"3","type":"quote","content":"This is not just a factory — it is the foundation of India''s digital sovereignty. — Ratan Tata, Chairman Emeritus, Tata Sons","styles":{}},{"id":"4","type":"text","content":"The Indian government''s $10 billion semiconductor incentive scheme, combined with TSMC''s manufacturing expertise and Tata''s capital, has created a blueprint that other emerging economies are now studying.","styles":{"alignment":"left"}}]',
     'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200',
     cat_indian, true, '7 min',
     'Tata-TSMC Gujarat semiconductor fab begins 7nm chip production, marking India''s entry into advanced chip manufacturing in 2026.',
@@ -133,7 +137,7 @@ BEGIN
     'rust-programming-adoption-report-2026',
     'Rust has surpassed Go in production usage for systems programming. Here''s why companies are making the switch.',
     '[{"id":"1","type":"heading","content":"Rust by the Numbers","styles":{"alignment":"left"}},{"id":"2","type":"text","content":"According to the 2026 Stack Overflow Developer Survey, Rust has overtaken Go as the preferred language for systems programming in production environments. Key statistics:\n\n• 34% of backend engineers now use Rust in production (up from 18% in 2024)\n• Microsoft has rewritten 45% of Windows kernel components in Rust\n• Google''s Fuchsia OS is 70%+ Rust\n• AWS Lambda now has native Rust runtime support with 2ms cold start","styles":{"alignment":"left"}},{"id":"3","type":"heading2","content":"Why Companies Choose Rust","styles":{"alignment":"left"}},{"id":"4","type":"text","content":"The primary drivers are memory safety guarantees, zero-cost abstractions, and increasingly excellent tooling. The Rust 2024 edition introduced features that significantly reduced the learning curve, including simplified lifetime annotations and more intuitive error messages.","styles":{"alignment":"left"}},{"id":"5","type":"code","content":"// Rust 2024 simplified async patterns\nasync fn fetch_user(id: UserId) -> Result<User> {\n    let user = db.query(\"SELECT * FROM users WHERE id = $1\", &[id]).await?;\n    let permissions = permissions_service.get(id).await?;\n    \n    Ok(User {\n        profile: user,\n        permissions,\n        last_seen: Instant::now(),\n    })\n}","styles":{}}]',
-    'https://images.unsplash.com/photo-1515879218367-8466d910auj7?w=1200',
+    'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200',
     cat_prog, true, '9 min',
     'Rust programming language 2026 adoption report: surpasses Go in production systems programming usage.',
     'rust, programming languages, systems programming, rust 2026, rust adoption',

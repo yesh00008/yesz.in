@@ -15,8 +15,6 @@ import SocialShareButtons from "@/components/SocialShareButtons";
 import ReadingTimeEstimator from "@/components/ReadingTimeEstimator";
 import AdBanner from "@/components/AdBanner";
 
-const AI_API_URL = "https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==";
-
 interface ContentBlock {
   id: string;
   type: "text" | "heading" | "heading2" | "heading3" | "image" | "video" | "list" | "ordered-list" | "quote" | "code" | "divider" | "callout" | "abstract" | "references" | "image-grid" | "table";

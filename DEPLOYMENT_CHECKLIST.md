@@ -172,13 +172,45 @@ Load events are deferred.
 - Code splitting recommended for next phase
 
 ### Security
-- Hide AI API credentials in environment variables (important!)
-  ```env
-  VITE_AI_API_URL=https://backend.buildpicoapps.com/aero/run/llm-api?pk=YOUR_KEY
-  ```
-- Use HTTPS only
-- Validate user input on backend
-- Implement CORS if backend is separate
+
+**IMPORTANT: Protecting API Keys**
+
+⚠️ **CRITICAL - DO NOT use VITE_ prefix for secrets!**
+VITE_ environment variables are bundled into the client JavaScript and visible to users. Never store API keys or secrets with VITE_ prefix.
+
+**Correct approach for AI API integration:**
+```javascript
+// ❌ WRONG - DO NOT DO THIS
+const AI_API_URL = "https://...?pk=YOUR_KEY"; // Exposed to browser!
+const VITE_AI_API_KEY = process.env.VITE_AI_API_KEY; // Bundled in client!
+
+// ✅ CORRECT - Server-side proxy
+// 1. Store key in process.env.AERO_API_KEY (not VITE_ prefix)
+// 2. Create backend endpoint: POST /api/ai-summarize
+// 3. Backend reads the key and forwards to buildpicoapps API
+// 4. Frontend calls /api/ai-summarize without any key
+```
+
+**Backend proxy example (Node.js/Supabase Edge Function):**
+```javascript
+export async function POST(request: Request) {
+  const apiKey = process.env.AERO_API_KEY; // Server-side only
+  const { prompt } = await request.json();
+  const response = await fetch('https://backend.buildpicoapps.com/aero/run/llm-api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+    body: JSON.stringify({ prompt })
+  });
+  return response;
+}
+```
+
+**Other security measures:**
+- Use HTTPS only in production
+- **If using buildpicoapps API backend:** Validate inputs server-side before forwarding (REQUIRED)
+- **If deploying a separate custom backend:** Implement CORS headers and validate all inputs (REQUIRED)
+- Set secure CORS headers: only allow your domain origin
+- Implement rate limiting on backend proxy endpoints
 
 ### Monitoring
 - Set up error tracking (Sentry, LogRocket, etc.)

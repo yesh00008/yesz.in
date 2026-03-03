@@ -18,13 +18,24 @@ const ResearchPapers = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const { data: papersData } = await supabase
-        .from("research_papers")
-        .select("*, categories(name, slug)")
-        .eq("published", true)
-        .order("published_at", { ascending: false });
-      if (papersData) setPapers(papersData);
-      setLoading(false);
+      try {
+        const { data: papersData, error } = await supabase
+          .from("research_papers")
+          .select("*, categories(name, slug)")
+          .eq("published", true)
+          .order("published_at", { ascending: false });
+        if (error) {
+          console.error("Error fetching papers:", error);
+          setPapers([]);
+        } else if (papersData) {
+          setPapers(papersData);
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        setPapers([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -58,11 +69,13 @@ const ResearchPapers = () => {
             Explore cutting-edge research papers published by our community of scholars, engineers, and industry experts.
             From AI to cybersecurity, discover the latest findings shaping the future of technology.
           </p>
-          <div className="flex items-center gap-4 mt-6 text-sm text-primary-foreground/70">
-            <span>{papers.length} papers published</span>
-            <span>·</span>
-            <span>{papers.filter(p => p.peer_reviewed).length} peer-reviewed</span>
-          </div>
+          {!loading && (
+            <div className="flex items-center gap-4 mt-6 text-sm text-primary-foreground/70">
+              <span>{papers.length} papers published</span>
+              <span>·</span>
+              <span>{papers.filter(p => p.peer_reviewed).length} peer-reviewed</span>
+            </div>
+          )}
         </div>
       </div>
 

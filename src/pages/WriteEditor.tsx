@@ -56,15 +56,21 @@ const WriteEditor = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Create refs for each block's file input to prevent cross-block uploads
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [showBlockMenu, setShowBlockMenu] = useState(false);
   const [blockMenuPosition, setBlockMenuPosition] = useState({ top: 0, left: 0 });
 
-  const [docType, setDocType] = useState<DocType>(
-    (searchParams.get("type") as DocType) || "blog"
-  );
+  // Validate docType from URL parameter
+  const getValidDocType = (): DocType => {
+    const typeParam = searchParams.get("type");
+    const validTypes: DocType[] = ["blog", "research"];
+    return validTypes.includes(typeParam as DocType) ? (typeParam as DocType) : "blog";
+  };
+
+  const [docType, setDocType] = useState<DocType>(getValidDocType());
 
   const [post, setPost] = useState({
     title: "",
@@ -1050,8 +1056,12 @@ const WriteEditor = () => {
                                 </div>
                               ) : (
                                 <div className="space-y-2">
-                                  <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(block.id, e.target.files[0]); }} className="hidden" />
-                                  <button onClick={() => fileInputRef.current?.click()} className="w-full rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 p-6 text-center hover:border-blue-400 transition-colors">
+                                  <input ref={(el) => { if (el) fileInputRefs.current[block.id] = el; }} type="file" accept="image/*" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(block.id, e.target.files[0]); }} className="hidden" />
+                                  <button onClick={() => {
+                                    if (fileInputRefs.current[block.id]) {
+                                      fileInputRefs.current[block.id]?.click();
+                                    }
+                                  }} className="w-full rounded-lg border-2 border-dashed border-gray-300 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 p-6 text-center hover:border-blue-400 transition-colors">
                                     <ImageIcon className="h-6 w-6 text-gray-400 mx-auto mb-1" />
                                     <p className="text-xs text-gray-400">Click to upload or drag image</p>
                                   </button>
