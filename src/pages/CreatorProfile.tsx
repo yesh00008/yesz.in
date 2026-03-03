@@ -74,7 +74,7 @@ const CreatorProfile = () => {
         .from("research_papers")
         .select("*")
         .eq("author_id", userId!)
-        .eq("published_at", "is.not.null")
+        .not("published_at", "is", null)
         .order("published_at", { ascending: false });
       if (researchPapers) setPapers(researchPapers);
 
@@ -113,6 +113,25 @@ const CreatorProfile = () => {
           const fileExt = avatarFile.name.split('.').pop();
           const fileName = `${user.id}-${Date.now()}.${fileExt}`;
           
+          // Check file size (max 5MB)
+          if (avatarFile.size > 5 * 1024 * 1024) {
+            throw new Error("File size exceeds 5MB limit");
+          }
+          
+          // Remove old avatar if exists
+          await supabase.storage
+            .from("avatars")
+            .list("", { limit: 100 })
+            .then(async (res) => {
+              if (res.data) {
+                const oldFiles = res.data.filter(f => f.name.startsWith(user.id + "-"));
+                for (const file of oldFiles) {
+                  await supabase.storage.from("avatars").remove([file.name]).catch(() => {});
+                }
+              }
+            })
+            .catch(() => {});
+          
           const { error: uploadError } = await supabase.storage
             .from("avatars")
             .upload(fileName, avatarFile, { upsert: true });
@@ -126,7 +145,8 @@ const CreatorProfile = () => {
           updateData.avatar_url = data.publicUrl;
         } catch (error) {
           console.error("Avatar handling error:", error);
-          throw error;
+          // Don't throw - allow profile update even if avatar fails
+          console.warn("Avatar upload skipped, profile will update without avatar change");
         }
       }
       
