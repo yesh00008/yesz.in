@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Globe, Calendar, Eye, FileText, Users } from "lucide-react";
+import { Globe, Calendar, Eye, FileText, Users, Instagram, Zap, BookOpen, Ticket, TrendingUp, Mail, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -45,8 +45,6 @@ const CreatorProfile = () => {
   }, [userId]);
 
   const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 0);
-  const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
-  const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
 
   if (loading) {
     return (
@@ -83,63 +81,189 @@ const CreatorProfile = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/5">
       <Navbar onSearchOpen={() => setSearchOpen(true)} />
       <SmartSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      <main className="py-12">
-        <div className="container max-w-4xl">
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Profile Header */}
-            <div className="flex flex-col sm:flex-row items-start gap-6 mb-10">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-black text-primary shrink-0">
-                {profile.display_name?.[0]?.toUpperCase() || "C"}
-              </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-black mb-1 text-primary">{profile.display_name || "Creator"}</h1>
-                {profile.bio && <p className="text-muted-foreground mb-3">{profile.bio}</p>}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
-                  {profile.website && (
-                    <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
-                      <Globe className="h-3.5 w-3.5" /> Website
-                    </a>
-                  )}
-                  <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {followerCount} followers</span>
-                  <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> {posts.length} articles</span>
-                  <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {totalViews.toLocaleString()} views</span>
-                  <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Joined {new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+      <main className="py-12 px-4">
+        <div className="max-w-md mx-auto">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-8">
+            
+            {/* Link in Bio Card */}
+            <div className="rounded-3xl border-2 border-border bg-card/95 backdrop-blur-sm shadow-2xl overflow-hidden">
+              {/* Background Header */}
+              <div className="h-24 bg-gradient-to-r from-primary/20 to-primary/10" />
+              
+              {/* Profile Section */}
+              <div className="px-6 pb-6">
+                {/* Avatar */}
+                <div className="flex justify-center -mt-16 mb-4">
+                  <div className="w-32 h-32 rounded-full bg-card border-4 border-card shadow-lg overflow-hidden flex items-center justify-center text-5xl font-black text-primary">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      profile.display_name?.[0]?.toUpperCase() || "C"
+                    )}
+                  </div>
                 </div>
-                {userId && <FollowButton authorId={userId} />}
+
+                {/* Name */}
+                <h1 className="text-2xl font-black text-center text-foreground mb-2">{profile.display_name || "Creator"}</h1>
+                
+                {/* Bio */}
+                {profile.bio && (
+                  <p className="text-sm text-center text-muted-foreground mb-6 leading-relaxed">{profile.bio}</p>
+                )}
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-8 text-center">
+                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="text-lg font-black text-primary">{followerCount}</div>
+                    <div className="text-xs text-muted-foreground">Followers</div>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="text-lg font-black text-primary">{posts.length}</div>
+                    <div className="text-xs text-muted-foreground">Articles</div>
+                  </motion.div>
+                  <motion.div whileHover={{ scale: 1.05 }} className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="text-lg font-black text-primary">{totalViews.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">Views</div>
+                  </motion.div>
+                </div>
+
+                {/* Follow Button */}
+                {userId && <div className="mb-6">{<FollowButton authorId={userId} />}</div>}
+
+                {/* Action Links */}
+                <div className="space-y-3">
+                  {/* Website */}
+                  {profile.website && (
+                    <motion.a
+                      href={profile.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 font-semibold text-sm text-foreground transition-all"
+                    >
+                      <Globe className="h-4 w-4" /> WEBSITE
+                    </motion.a>
+                  )}
+
+                  {/* Articles */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => document.querySelector("#articles")?.scrollIntoView({ behavior: "smooth" })}
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 font-semibold text-sm text-foreground transition-all"
+                  >
+                    <FileText className="h-4 w-4" /> ARTICLES ({posts.length})
+                  </motion.button>
+
+                  {/* Blog Monetization */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10 hover:border-yellow-500/40 font-semibold text-sm text-foreground transition-all"
+                  >
+                    <Zap className="h-4 w-4" /> PREMIUM ACCESS
+                  </motion.button>
+
+                  {/* Coaching/Services */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/40 font-semibold text-sm text-foreground transition-all"
+                  >
+                    <BookOpen className="h-4 w-4" /> COURSES
+                  </motion.button>
+
+                  {/* Newsletter */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-green-500/20 bg-green-500/5 hover:bg-green-500/10 hover:border-green-500/40 font-semibold text-sm text-foreground transition-all"
+                  >
+                    <Mail className="h-4 w-4" /> NEWSLETTER
+                  </motion.button>
+
+                  {/* Affiliates */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 hover:border-purple-500/40 font-semibold text-sm text-foreground transition-all"
+                  >
+                    <TrendingUp className="h-4 w-4" /> AFFILIATE LINKS
+                  </motion.button>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px bg-border my-6" />
+
+                {/* Social Icons */}
+                <div className="flex items-center justify-center gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Globe className="h-5 w-5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Mail className="h-5 w-5" />
+                  </motion.button>
+                </div>
+
+                {/* Footer Info */}
+                <p className="text-xs text-muted-foreground text-center mt-6">
+                  Joined {new Date(profile.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                </p>
               </div>
             </div>
 
-            {/* Posts */}
-            <h2 className="text-xl font-bold mb-6">Published Articles</h2>
-            {posts.length > 0 ? (
-              <motion.div variants={container} initial="hidden" animate="show" className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {posts.map((post, i) => (
-                  <motion.div key={post.id} variants={item}>
-                    <PostCard
-                      post={{
-                        id: post.id,
-                        title: post.title,
-                        summary: post.summary || "",
-                        category: post.categories?.name || "General",
-                        image: post.image_url || "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80",
-                        date: new Date(post.published_at || post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                        readTime: post.read_time || "5 min",
-                        author: profile.display_name || "Creator",
-                        slug: post.slug,
-                      }}
-                      index={i}
-                    />
-                  </motion.div>
-                ))}
-              </motion.div>
-            ) : (
-              <div className="text-center py-16 rounded-xl border border-dashed border-border">
-                <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="text-muted-foreground">No published articles yet</p>
+            {/* Articles Section */}
+            {posts.length > 0 && (
+              <div id="articles" className="mt-12">
+                <h2 className="text-2xl font-bold text-center mb-6">Featured Articles</h2>
+                <div className="grid gap-4">
+                  {posts.slice(0, 6).map((post, i) => (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className="group"
+                    >
+                      <Link
+                        to={`/blog/${post.slug}`}
+                        className="flex gap-4 p-4 rounded-xl border border-border hover:border-primary/30 bg-card hover:bg-primary/5 transition-all"
+                      >
+                        {post.image_url && (
+                          <img
+                            src={post.image_url}
+                            alt=""
+                            className="w-16 h-16 rounded-lg object-cover"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{post.title}</h3>
+                          <p className="text-xs text-muted-foreground mt-1">{post.categories?.name || "General"}</p>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>
