@@ -89,3 +89,5 @@ $$;
 
 DROP TRIGGER IF EXISTS on_new_follow ON public.follows;
 CREATE TRIGGER on_new_follow
+  AFTER INSERT ON public.follows
+  FOR EACH ROW EXECUTE FUNCTION public.notify_on_follow();
