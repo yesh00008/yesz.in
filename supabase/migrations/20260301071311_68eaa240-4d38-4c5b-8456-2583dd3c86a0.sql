@@ -1,6 +1,6 @@
 
 -- Notifications table for real-time notifications
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
   type text NOT NULL DEFAULT 'info',
@@ -54,7 +54,7 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER on_new_comment
+CREATE TRIGGER IF NOT EXISTS on_new_comment
   AFTER INSERT ON public.comments
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_comment();
 
@@ -77,6 +77,6 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER on_new_follow
+CREATE TRIGGER IF NOT EXISTS on_new_follow
   AFTER INSERT ON public.follows
   FOR EACH ROW EXECUTE FUNCTION public.notify_on_follow();
