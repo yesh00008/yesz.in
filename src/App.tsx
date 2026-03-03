@@ -53,7 +53,7 @@ const AnimatedRoutes = () => {
         <Route path="/creator/dashboard" element={<PageTransition><CreatorDashboard /></PageTransition>} />
         <Route path="/creator/write" element={<PageTransition><WriteEditor /></PageTransition>} />
         <Route path="/creator/write/:id" element={<PageTransition><WriteEditor /></PageTransition>} />
-        <Route path="/creator/:username" element={<PageTransition><CreatorProfile /></PageTransition>} />
+        <Route path="/:username" element={<PageTransition><CreatorProfile /></PageTransition>} />
         <Route path="/bookmarks" element={<PageTransition><Bookmarks /></PageTransition>} />
         <Route path="/tag/:slug" element={<PageTransition><TagPage /></PageTransition>} />
         <Route path="/careers" element={<PageTransition><Careers /></PageTransition>} />
