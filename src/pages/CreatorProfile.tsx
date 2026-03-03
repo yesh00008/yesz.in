@@ -94,33 +94,59 @@ const CreatorProfile = () => {
     
     setUploading(true);
     try {
-      let updateData = { ...editFormData };
+      let updateData: any = {};
+      
+      // Only include fields that have values (not empty strings)
+      if (editFormData.display_name) updateData.display_name = editFormData.display_name;
+      if (editFormData.bio) updateData.bio = editFormData.bio;
+      if (editFormData.website) updateData.website = editFormData.website;
+      if (editFormData.location) updateData.location = editFormData.location;
+      if (editFormData.expertise) updateData.expertise = editFormData.expertise;
+      if (editFormData.twitter_url) updateData.twitter_url = editFormData.twitter_url;
+      if (editFormData.linkedin_url) updateData.linkedin_url = editFormData.linkedin_url;
+      if (editFormData.github_url) updateData.github_url = editFormData.github_url;
+      if (editFormData.instagram_url) updateData.instagram_url = editFormData.instagram_url;
       
       // Handle avatar upload
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(fileName, avatarFile, { upsert: true });
-        
-        if (uploadError) throw uploadError;
-        
-        const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
-        updateData.avatar_url = data.publicUrl;
+        try {
+          const fileExt = avatarFile.name.split('.').pop();
+          const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(fileName, avatarFile, { upsert: true });
+          
+          if (uploadError) {
+            console.error("Avatar upload error:", uploadError);
+            throw new Error(`Avatar upload failed: ${uploadError.message}`);
+          }
+          
+          const { data } = supabase.storage.from("avatars").getPublicUrl(fileName);
+          updateData.avatar_url = data.publicUrl;
+        } catch (error) {
+          console.error("Avatar handling error:", error);
+          throw error;
+        }
       }
       
-      await supabase
+      // Update profile with only the fields that have values
+      const { error: updateError } = await supabase
         .from("profiles")
         .update(updateData)
         .eq("user_id", user.id);
       
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        throw updateError;
+      }
+      
       setProfile({ ...profile, ...updateData });
       setAvatarFile(null);
       setShowEditModal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      alert("Failed to update profile. Please try again.");
+      alert(`Failed to update profile: ${error?.message || "Unknown error"}`);
     } finally {
       setUploading(false);
     }
