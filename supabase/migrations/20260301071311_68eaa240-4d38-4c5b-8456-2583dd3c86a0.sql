@@ -13,15 +13,15 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own notifications"
+CREATE POLICY IF NOT EXISTS "Users can view their own notifications"
   ON public.notifications FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own notifications"
+CREATE POLICY IF NOT EXISTS "Users can update their own notifications"
   ON public.notifications FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "System can insert notifications"
+CREATE POLICY IF NOT EXISTS "System can insert notifications"
   ON public.notifications FOR INSERT
   WITH CHECK (true);
 
