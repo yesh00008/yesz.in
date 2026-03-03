@@ -22,6 +22,8 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
   const [loading, setLoading] = useState(false);
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [summarizingId, setSummarizingId] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<{ [key: string]: string }>({});
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -101,7 +103,7 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
       }, 10000); // 10s timeout
       
       try {
-        const response = await fetch("/api/aero/run", {
+        const response = await fetch("https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt }),
@@ -133,6 +135,46 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
       setAiAnswer("");
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const generateSummary = async (id: string, title: string, content: string | undefined) => {
+    setSummarizingId(id);
+    try {
+      const prompt = `Summarize this ${title.length > 100 ? "article" : "article"} in 2-3 sentences. Focus on key points and conclusions.\n\nTitle: ${title}\n\nContent: ${(content || "").slice(0, 2000)}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 30000); // 30s timeout
+      
+      try {
+        const response = await fetch("https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === "success" && data.text) {
+            setSummaries(prev => ({ ...prev, [id]: data.text.trim() }));
+          }
+        } else {
+          console.error("Summary API error:", response.status);
+        }
+      } catch (fetchErr: any) {
+        if (fetchErr.name === "AbortError") {
+          console.error("Summary request timeout");
+        } else {
+          console.error("Summary fetch error:", fetchErr);
+        }
+      }
+    } catch (error) {
+      console.error("Summary generation error:", error);
+    } finally {
+      setSummarizingId(null);
     }
   };
 
@@ -254,27 +296,51 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
                             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Blog Posts</span>
                           </div>
                           {postResults.map((post) => (
-                            <Link
-                              key={post.id}
-                              to={`/post/${post.slug}`}
-                              onClick={handleResultClick}
-                              className="flex items-start gap-3 rounded-xl p-3 hover:bg-secondary transition-colors group"
-                            >
-                              {post.image_url && (
-                                <img src={post.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <h4
-                                  className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors"
-                                  dangerouslySetInnerHTML={{ __html: highlightMatch(post.title) }}
-                                />
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[11px] text-primary font-medium">{post.categories?.name || "General"}</span>
-                                  <span className="text-[10px] text-muted-foreground">· {post.read_time || "5 min"}</span>
-                                  <span className="text-[10px] text-muted-foreground">· {post.views || 0} views</span>
+                            <div key={post.id} className="rounded-xl hover:bg-secondary transition-colors">
+                              <Link
+                                to={`/post/${post.slug}`}
+                                onClick={handleResultClick}
+                                className="flex items-start gap-3 p-3 group"
+                              >
+                                {post.image_url && (
+                                  <img src={post.image_url} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <h4
+                                    className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors"
+                                    dangerouslySetInnerHTML={{ __html: highlightMatch(post.title) }}
+                                  />
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[11px] text-primary font-medium">{post.categories?.name || "General"}</span>
+                                    <span className="text-[10px] text-muted-foreground">· {post.read_time || "5 min"}</span>
+                                    <span className="text-[10px] text-muted-foreground">· {post.views || 0} views</span>
+                                  </div>
                                 </div>
-                              </div>
-                            </Link>
+                              </Link>
+                              <button
+                                onClick={() => generateSummary(post.id, post.title, post.summary)}
+                                disabled={summarizingId === post.id}
+                                className="text-[10px] px-3 py-1.5 mx-3 mb-2 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-1.5 font-medium"
+                              >
+                                {summarizingId === post.id ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Summarizing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="h-3 w-3" />
+                                    Summarize
+                                  </>
+                                )}
+                              </button>
+                              {summaries[post.id] && (
+                                <div className="px-3 pb-2 text-xs text-muted-foreground bg-primary/5 rounded-lg mx-3 p-2">
+                                  <p className="font-medium text-primary mb-1">Summary:</p>
+                                  <p className="leading-relaxed">{summaries[post.id]}</p>
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </>
                       )}
@@ -286,28 +352,52 @@ const SmartSearch = ({ open, onClose }: SmartSearchProps) => {
                             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Research Papers</span>
                           </div>
                           {paperResults.map((paper) => (
-                            <Link
-                              key={paper.id}
-                              to={`/research/${paper.slug}`}
-                              onClick={handleResultClick}
-                              className="flex items-start gap-3 rounded-xl p-3 hover:bg-secondary transition-colors group"
-                            >
-                              {paper.cover_image && (
-                                <img src={paper.cover_image} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <h4
-                                  className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors"
-                                  dangerouslySetInnerHTML={{ __html: highlightMatch(paper.title) }}
-                                />
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                                    {paper.paper_type?.replace("-", " ") || "Research"}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground">{paper.categories?.name}</span>
+                            <div key={paper.id} className="rounded-xl hover:bg-secondary transition-colors">
+                              <Link
+                                to={`/research/${paper.slug}`}
+                                onClick={handleResultClick}
+                                className="flex items-start gap-3 p-3 group"
+                              >
+                                {paper.cover_image && (
+                                  <img src={paper.cover_image} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <h4
+                                    className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors"
+                                    dangerouslySetInnerHTML={{ __html: highlightMatch(paper.title) }}
+                                  />
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                                      {paper.paper_type?.replace("-", " ") || "Research"}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">{paper.categories?.name}</span>
+                                  </div>
                                 </div>
-                              </div>
-                            </Link>
+                              </Link>
+                              <button
+                                onClick={() => generateSummary(paper.id, paper.title, paper.abstract)}
+                                disabled={summarizingId === paper.id}
+                                className="text-[10px] px-3 py-1.5 mx-3 mb-2 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 flex items-center gap-1.5 font-medium"
+                              >
+                                {summarizingId === paper.id ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Summarizing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="h-3 w-3" />
+                                    Summarize
+                                  </>
+                                )}
+                              </button>
+                              {summaries[paper.id] && (
+                                <div className="px-3 pb-2 text-xs text-muted-foreground bg-primary/5 rounded-lg mx-3 p-2">
+                                  <p className="font-medium text-primary mb-1">Summary:</p>
+                                  <p className="leading-relaxed">{summaries[paper.id]}</p>
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </>
                       )}
