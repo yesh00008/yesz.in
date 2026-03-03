@@ -88,31 +88,22 @@ const ResearchPaper = () => {
       }, 30000); // 30s timeout
       
       try {
-        const res = await fetch("https://YOUR_SUPABASE_URL/functions/v1/ai-summarize", {
+        const res = await fetch("https://backend.buildpicoapps.com/aero/run/llm-api?pk=v1-Z0FBQUFBQnBwb09XYXJJUUFvWlRpUVctMUhBNUdnTWlaTE5vcXZIaVJFc1BTc0wtUEpHT19lOTd6SnFfYWprZkZEakFJaFF6OV9xOFZHNGNvLWlURk5PcFNCNHlfVGJFOEE9PQ==", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, contentType: "paper" }),
+          body: JSON.stringify({ prompt }),
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
         
-        if (res.status === 429) {
+        const data = await res.json();
+        
+        if (data.status === "success" && data.text) {
+          setAiSummary(data.text.trim());
+        } else if (res.status === 429) {
           setAiSummary("Rate limit reached. Please wait a moment and try again.");
-        } else if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          setAiSummary(errorData.error || "Unable to generate summary. Please try again.");
         } else {
-          try {
-            const data = await res.json();
-            if (data.status === "success" && data.text) {
-              setAiSummary(data.text.trim());
-            } else {
-              setAiSummary(data.error || "Unable to generate summary. Please try again.");
-            }
-          } catch (parseErr) {
-            console.error("JSON parse error:", parseErr);
-            setAiSummary("Unable to parse response. Please try again.");
-          }
+          setAiSummary(data.error || "Unable to generate summary. Please try again.");
         }
       } catch (fetchErr: any) {
         if (fetchErr.name === "AbortError") {
